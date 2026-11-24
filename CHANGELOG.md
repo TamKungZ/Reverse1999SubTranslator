@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2026-11-24
+
+### Removed
+
+- Code and a development helper that nothing used. There is no change in behavior.
+
 ## [1.0.0] - 2026-11-24
 
 ### Added
