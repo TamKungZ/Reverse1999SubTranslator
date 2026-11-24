@@ -10,10 +10,11 @@ Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's
 
 ## Screenshots
 
-<!--
-![Dialog](docs/images/dialog.png)
-![Main menu](docs/images/main-menu.png)
--->
+The same line of the main menu, translated by each translator:
+
+| Argos (default, faster) | NLLB-200 (larger) |
+| :---: | :---: |
+| ![Argos](docs/images/argos_menu.png) | ![NLLB-200](docs/images/nllb_menu.png) |
 
 ## Install
 
