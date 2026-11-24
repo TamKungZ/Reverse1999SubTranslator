@@ -3,16 +3,18 @@ import threading
 from .. import PROTOCOL_VERSION, __version__
 from ..config import EngineConfig
 from ..glossary import Glossary
-from ..languages import LANGUAGES
+from ..languages import ERRORS, LANGUAGES, model_repo
 from ..model import Downloader, is_ready, model_dir
 from ..session import Session
 from ..storage import data_dir
 from ..translate import FakeEngine, NLLBEngine, TextTranslator
 from .frames import decode_frame
 
+RESET_KEYS = {"target_lang", "mode", "word_level", "name_style"}
+
 
 class Host:
-    """Owns the engine state: config, glossary, OCR and translation session, and the model download."""
+    """Owns the engine state: config, glossary, OCR and translation session, and the model downloads."""
 
     def __init__(self, fake=False, config_path=None, glossary_path=None):
         self.cfg = EngineConfig(config_path)
@@ -22,6 +24,11 @@ class Host:
         self.downloader = Downloader()
         self.state = "starting"
         self.error = ""
+        self._engines = {}
+
+    def repo(self):
+        """The model the current target language translates with."""
+        return model_repo(self.cfg["target_lang"], self.cfg["model_repo"])
 
     def start(self):
         self.session.start()
@@ -35,37 +42,61 @@ class Host:
             from ..ocr import DialogReader
 
             self.session.reader = DialogReader(self.glossary)
-            if self.fake:
-                self._attach(FakeEngine())
-            elif is_ready(model_dir(self.cfg["model_repo"])):
-                self._load_model()
-            else:
-                self.state = "model_missing"
+            self._select_engine()
         except Exception as exc:
             self._fail(exc)
 
-    def _load_model(self):
+    def _select_engine(self):
+        """Uses the engine of the target language: attach it, load it from disk, or report the model as missing."""
+        if self.fake:
+            if self.session.translator is None:
+                self._attach(FakeEngine())
+            return
+        repo = self.repo()
+        if repo in self._engines:
+            self._attach(self._engines[repo])
+            return
+        self._detach()
+        if is_ready(model_dir(repo)):
+            self.state = "loading"
+            threading.Thread(target=self._load_model, args=(repo,), daemon=True).start()
+        else:
+            self.state = "model_missing"
+
+    def _load_model(self, repo):
         self.state = "loading"
         try:
-            engine = NLLBEngine(model_dir(self.cfg["model_repo"]), self.cfg["threads"], self.cfg["device"])
-            self._attach(engine)
+            self._engines[repo] = NLLBEngine(model_dir(repo), self.cfg["threads"], self.cfg["device"])
         except Exception as exc:
             self._fail(exc)
+            return
+        self._select_engine()
+
+    def _detach(self):
+        old, self.session.translator = self.session.translator, None
+        if old:
+            old.flush()
 
     def _attach(self, engine):
+        old = self.session.translator
+        if old:
+            old.flush()
         self.session.translator = TextTranslator(engine, self.glossary, persist=not self.fake)
-        self.state = "ready"
+        self.state, self.error = "ready", ""
 
     def download_model(self):
+        repo = self.repo()
         self.state = "downloading"
         self.downloader.start(
-            self.cfg["model_repo"], on_done=lambda: threading.Thread(target=self._load_model, daemon=True).start()
+            repo, on_done=lambda: threading.Thread(target=self._load_model, args=(repo,), daemon=True).start()
         )
 
     def update_config(self, values):
         changed = self.cfg.update(values)
-        if {"target_lang", "mode", "word_level", "name_style"} & set(changed):
+        if RESET_KEYS & set(changed):
             self.session.reset()
+        if "target_lang" in changed and self.session.reader is not None:
+            self._select_engine()
         return changed
 
     def info(self):
@@ -78,6 +109,9 @@ class Host:
             "error": self.error,
             "download": self.downloader.progress(),
             "languages": {k: v["name"] for k, v in LANGUAGES.items()},
+            "scripts": {k: v["script"] for k, v in LANGUAGES.items()},
+            "language_errors": ERRORS,
+            "model_repo": self.repo(),
             "config": self.cfg.snapshot(),
         }
 
