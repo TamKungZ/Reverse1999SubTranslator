@@ -11,6 +11,15 @@ from ..translate import FakeEngine, NLLBEngine, TextTranslator
 from .frames import decode_frame
 
 RESET_KEYS = {"target_lang", "mode", "word_level", "name_style"}
+MEDIA_PACK = "Install the Media Feature Pack from Microsoft (Windows N editions) and restart. OpenCV could not be loaded: %s"
+
+
+def explain(exc):
+    """OpenCV needs Windows Media Foundation, which is missing on Windows N editions, and it fails with a cryptic message."""
+    text = str(exc)
+    if isinstance(exc, ImportError) and (getattr(exc, "name", None) == "cv2" or "cv2" in text):
+        return MEDIA_PACK % text
+    return text
 
 
 class Host:
@@ -35,7 +44,7 @@ class Host:
         threading.Thread(target=self._boot, daemon=True).start()
 
     def _fail(self, exc):
-        self.state, self.error = "error", str(exc)
+        self.state, self.error = "error", explain(exc)
 
     def _boot(self):
         try:

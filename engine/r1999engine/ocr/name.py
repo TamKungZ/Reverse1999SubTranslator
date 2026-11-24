@@ -1,7 +1,6 @@
 import re
 from typing import NamedTuple
 
-import cv2
 import numpy as np
 
 from .glyphs import first_glyph_height, hex_color
@@ -30,6 +29,8 @@ def plausible_name(bbox, info, ch):
 
 
 def _canvas(inv, scale):
+    import cv2   # loaded here so the engine can start and explain it when OpenCV cannot be loaded
+
     big = cv2.resize(inv, (inv.shape[1] * scale, inv.shape[0] * scale), interpolation=cv2.INTER_LANCZOS4)
     pad = 30
     canvas = cv2.copyMakeBorder(big, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=255)

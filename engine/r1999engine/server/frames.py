@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 from ..ocr import Frame
@@ -10,6 +9,8 @@ def decode_frame(body, headers):
     """Builds a Frame from a /frame request: raw BGR bytes or a PNG, plus the client size and capture region."""
     w, h = int(headers["X-Width"]), int(headers["X-Height"])
     if headers.get("X-Format", "bgr") == "png":
+        import cv2
+
         img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
     else:
         img = np.frombuffer(body, np.uint8).reshape(h, w, 3)
