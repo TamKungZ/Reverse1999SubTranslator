@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.2] - 2026-11-24
+
+### Fixed
+
+- The translator, and the other choices that load a model, could be changed only once per start of the program. After the engine answered, the menu kept looking at an old copy of the settings and the next change did nothing.
+
 ## [1.1.1] - 2026-11-24
 
 ### Added
