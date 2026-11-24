@@ -5,15 +5,21 @@ import cv2
 
 from .config import EngineConfig
 from .glossary import Glossary
-from .languages import model_repo
-from .model import is_ready, model_dir
+from .languages import LANGUAGES, model_repo
+from .model import argos_dir, is_argos_ready, is_ready, model_dir
 from .ocr import DialogReader, Frame
-from .translate import FakeEngine, NLLBEngine, TextTranslator
+from .translate import ArgosEngine, FakeEngine, NLLBEngine, TextTranslator
 
 
 def _engine(cfg, fake):
     if fake:
         return FakeEngine()
+    argos = LANGUAGES[cfg["target_lang"]]["argos"]
+    if cfg["translator"] == "argos" and argos:
+        path = argos_dir(argos)
+        if not is_argos_ready(path):
+            sys.exit("model not downloaded: %s" % path)
+        return ArgosEngine(path, cfg["threads"], cfg["beam_size"])
     path = model_dir(model_repo(cfg["target_lang"], cfg["model_repo"]))
     if not is_ready(path):
         sys.exit("model not downloaded: %s" % path)

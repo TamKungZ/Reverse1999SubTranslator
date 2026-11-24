@@ -1,6 +1,6 @@
 {
-  "_about": "Target languages. Copy this file to %APPDATA%\\R1999Translator\\engine\\languages.json and add or change entries there. Required per entry: name (shown in the menu) and nllb (NLLB-200 code, for example deu_Latn). Optional: join (text placed between translated sentences, default a space, empty for Japanese and Chinese), native_names (transliterate names into the language, default true for non Latin scripts), fonts (font families the UI should prefer for this language, the first one is the default), model_repo (a CTranslate2 NLLB model on Hugging Face to use for this language instead of the default one, downloaded the first time the language is selected).",
-  "th": {"name": "ไทย", "nllb": "tha_Thai", "fonts": ["Kanit", "Leelawadee UI", "Tahoma", "Leelawadee", "Cordia New", "Angsana New", "Browallia New"]},
-  "id": {"name": "Indonesia", "nllb": "ind_Latn"},
-  "vi": {"name": "Tiếng Việt", "nllb": "vie_Latn"}
+  "_about": "Target languages. Copy this file to %APPDATA%\\R1999Translator\\engine\\languages.json and add or change entries there. Required per entry: name (shown in the menu) and nllb (NLLB-200 code, for example deu_Latn). Optional: join (text placed between translated sentences, default a space, empty for Japanese and Chinese), native_names (transliterate names into the language, default true for non Latin scripts), fonts (font families the UI should prefer for this language, the first one is the default), argos (the code of the Argos Translate model from English to this language, which the Argos translator uses when it exists), model_repo (a CTranslate2 NLLB model on Hugging Face to use for this language instead of the default one, downloaded the first time the language is selected).",
+  "th": {"name": "ไทย", "nllb": "tha_Thai", "fonts": ["Kanit", "Leelawadee UI", "Tahoma", "Leelawadee", "Cordia New", "Angsana New", "Browallia New"], "argos": "th"},
+  "id": {"name": "Indonesia", "nllb": "ind_Latn", "argos": "id"},
+  "vi": {"name": "Tiếng Việt", "nllb": "vie_Latn", "argos": "vi"}
 }

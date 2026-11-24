@@ -119,18 +119,83 @@ def test_switching_to_a_language_with_its_own_model():
         host.session.reader = object()
         host_module.is_ready = lambda directory: "indonesian" not in str(directory)
         host_module.NLLBEngine = Stub
-        host._load_model(host.repo())
+        host._load_model(host.need())
         assert host.state == "ready" and host.info()["model_repo"] == host.cfg["model_repo"]
         host.update_config({"target_lang": "id"})
         assert host.state == "model_missing" and host.session.translator is None and host.info()["model_repo"] == "me/indonesian-model"
         host_module.is_ready = lambda directory: True
-        host._load_model("me/indonesian-model")
+        host._load_model(host.need())
         assert host.state == "ready" and host.session.translator.engine.args[0].name.endswith("me__indonesian-model")
         host.update_config({"target_lang": "th"})
-        assert host.state == "ready" and host.session.translator.engine is host._engines[host.cfg["model_repo"]]
+        assert host.state == "ready" and host.session.translator.engine is host._engines[("nllb", host.cfg["model_repo"])]
     finally:
         langs["id"]["model_repo"] = None
         host_module.is_ready, host_module.NLLBEngine = original
+
+
+def test_the_argos_translator_is_chosen_per_language_and_falls_back_to_nllb():
+    import r1999engine.server.host as host_module
+    from r1999engine.languages import LANGUAGES as langs
+
+    class Stub:
+        def __init__(self, *args):
+            self.args = args
+
+    langs["xx"] = {**langs["th"], "argos": None}
+    saved = (host_module.is_argos_ready, host_module.ArgosEngine)
+    try:
+        host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
+        host.session.reader = object()
+        assert host.need()[0] == "nllb" and host.info()["translator"] == "nllb"
+        host.update_config({"translator": "argos"})
+        assert host.need() == ("argos", "th") and host.repo() == "argos:en-th" and host.info()["translator"] == "argos"
+        assert host.state == "model_missing" and host.session.translator is None
+        host_module.is_argos_ready = lambda directory: True
+        host_module.ArgosEngine = Stub
+        host._load_model(host.need())
+        assert host.state == "ready" and host.session.translator.engine.args[0].name == "en_th"
+        assert host.downloader is host.downloaders["nllb"]
+        host._downloading = host.need()[0]
+        assert host.downloader is host.downloaders["argos"]
+        host.cfg.data["target_lang"] = "xx"
+        assert host.need()[0] == "nllb" and host.info()["translator"] == "nllb"
+    finally:
+        langs.pop("xx", None)
+        host_module.is_argos_ready, host_module.ArgosEngine = saved
+
+
+def test_argos_models_are_found_unpacked_and_cleaned():
+    import io, zipfile
+    from r1999engine.model.argos import extract_pack, is_argos_ready, pick_pack
+    from r1999engine.translate.engines import clean_pieces
+    from r1999engine.languages import complete
+    index = [{"from_code": "en", "to_code": "th", "package_version": "1.9", "links": ["a"]},
+             {"from_code": "en", "to_code": "th", "package_version": "1.10", "links": ["b"]},
+             {"from_code": "th", "to_code": "en", "package_version": "9.0", "links": ["c"]}]
+    assert pick_pack(index, "th")["links"] == ["b"] and pick_pack(index, "xx") is None
+    pack = Path(tempfile.mkdtemp()) / "en_th.argosmodel"
+    with zipfile.ZipFile(pack, "w") as z:
+        for name in ("sentencepiece.model", "model/model.bin", "model/shared_vocabulary.json", "model/config.json", "stanza/en/tokenize/ewt.pt", "README.md"):
+            z.writestr("translate-en_th-1_9/" + name, "x")
+    target = Path(tempfile.mkdtemp()) / "en_th"
+    extract_pack(pack, target)
+    assert is_argos_ready(target) and not (target / "stanza").exists() and not (target / "README.md").exists()
+    unsafe = Path(tempfile.mkdtemp()) / "bad.argosmodel"
+    with zipfile.ZipFile(unsafe, "w") as z:
+        z.writestr("pack/model/../../escaped.txt", "x")
+    try:
+        extract_pack(unsafe, Path(tempfile.mkdtemp()) / "en_xx")
+        raise AssertionError("an archive that writes outside its folder must be refused")
+    except RuntimeError:
+        pass
+    assert clean_pieces("▁เสื้อ▁ยาว  มาก") == "เสื้อ ยาว มาก"
+    assert complete("th", {"name": "x", "nllb": "tha_Thai", "argos": "th"})["argos"] == "th" and complete("de", {"name": "x", "nllb": "deu_Latn"})["argos"] is None
+    for bad in ("Thai", 5, "t"):
+        try:
+            complete("x", {"name": "x", "nllb": "deu_Latn", "argos": bad})
+        except ValueError:
+            continue
+        raise AssertionError("argos %r should be rejected" % (bad,))
 
 
 class CountingReader:
@@ -148,13 +213,18 @@ def test_unchanged_text_is_not_read_again_while_the_background_moves():
     frame = type("F", (), {})()
     base = np.full((540, 1280, 3), 40, np.uint8)
     base[400:460, 160:960] = 200                 # the text
+    frame.img = base
+    s.process_frame(frame)
+    clock.t += 3.0
+    s.process_frame(frame)
+    first = reader.reads
     for step in range(10):
         clock.t += 0.1
         moving = base.copy()
         moving[:300, :, :] = 40 + step * 5       # the background changes every frame, away from the text
         frame.img = moving
         s.process_frame(frame)
-    assert reader.reads <= 2                     # the first look and one refresh, not one per frame
+    assert reader.reads - first <= 2
     clock.t += 0.1
     changed = base.copy()
     changed[400:460, 160:960] = 40               # the text disappears
@@ -163,6 +233,24 @@ def test_unchanged_text_is_not_read_again_while_the_background_moves():
     before = reader.reads
     s.process_frame(frame)
     assert reader.reads == before + 1 and s._box is None
+
+
+def test_text_that_is_typed_out_is_noticed_where_it_grows():
+    s, clock = make_session("wait")
+    reader = s.reader = CountingReader()
+    reader.box = (160, 400, 400, 460)
+    frame = type("F", (), {})()
+    frame.img = np.full((540, 1280, 3), 40, np.uint8)
+    frame.img[400:460, 160:400] = 200
+    s.process_frame(frame)
+    first = reader.reads
+    for step in range(1, 6):
+        clock.t += 0.05
+        grown = frame.img.copy()
+        grown[400:460, 160:400 + step * 100] = 200
+        frame.img = grown
+        s.process_frame(frame)
+    assert reader.reads - first == 5
 
 
 def test_text_that_appears_in_a_quiet_scene_is_found():

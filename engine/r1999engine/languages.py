@@ -10,6 +10,7 @@ USER_FILE = "languages.json"
 CODE = re.compile(r"[A-Za-z0-9_-]{1,16}")
 NLLB_CODE = re.compile(r"[a-z]{3}_[A-Z][a-z]{3}")
 MODEL_REPO = re.compile(r"[\w.-]+/[\w.-]+")
+ARGOS_CODE = re.compile(r"[a-z]{2,3}")
 NO_SPACE_SCRIPTS = frozenset({"Jpan", "Hans", "Hant"})
 
 
@@ -26,6 +27,9 @@ def complete(code, entry):
         raise ValueError("nllb must look like tha_Thai")
     if repo is not None and not (isinstance(repo, str) and MODEL_REPO.fullmatch(repo)):
         raise ValueError("model_repo must look like owner/name")
+    argos = entry.get("argos")
+    if argos is not None and not (isinstance(argos, str) and ARGOS_CODE.fullmatch(argos)):
+        raise ValueError("argos must be a language code such as th")
     fonts = entry.get("fonts", [])
     if not (isinstance(fonts, list) and all(isinstance(f, str) and f.strip() for f in fonts)):
         raise ValueError("fonts must be a list of font names")
@@ -37,6 +41,7 @@ def complete(code, entry):
         "join": entry.get("join", "" if script in NO_SPACE_SCRIPTS else " "),
         "native_names": bool(entry.get("native_names", script != "Latn")),
         "model_repo": repo,
+        "argos": argos,
         "fonts": fonts,
     }
 
