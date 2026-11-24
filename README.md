@@ -21,3 +21,6 @@ interface language, and more) are in the F9 menu and saved in `%APPDATA%\R1999Tr
 Interface language: add `<code>.json` to `%APPDATA%\R1999Translator\locales` (copy `ui\r1999ui\locales\en.json`,
 set `_name`); it then appears in the menu. Names: add or fix entries in `engine\glossary.json` in the same
 folder, in the format of `engine\r1999engine\data\glossary.json`.
+Target languages: add entries to `engine\languages.json` in the same folder, in the format of
+`engine\r1999engine\data\languages.json`; a language with its own `model_repo` downloads that model when it is
+first selected.

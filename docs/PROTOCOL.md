@@ -7,7 +7,7 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `config` |
+| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `scripts`, `language_errors`, `model_repo`, `config` |
 | POST | `/frame` | Send one frame, receive the current view |
 | GET | `/view` | Current view without sending a frame |
 | GET / POST | `/config` | Read or update engine settings (JSON object) |
@@ -17,6 +17,10 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 
 `state` is one of `starting`, `loading`, `model_missing`, `downloading`, `ready`, `error`.
 `download` is `{state, done, total, file, error}` in bytes.
+`languages` maps a language code to its display name and `scripts` to its script (`Thai`, `Latn`, `Jpan`, ...).
+`language_errors` lists entries of the user's `languages.json` that were skipped. `model_repo` is the model the
+current `target_lang` uses. Setting `target_lang` to a language whose model is not on disk changes `state` to
+`model_missing`; call `/model/download` to fetch it.
 
 ## POST /frame
 
@@ -63,6 +67,6 @@ The response is the current view; redraw when `seq` or `kind` changes.
 
 ## Config keys
 
-`mode` (`sentence`|`word`), `timing` (`wait`|`live`), `target_lang`, `name_style` (`native`|`original`|`both`),
+`mode` (`sentence`|`word`), `timing` (`wait`|`live`), `target_lang` (a key of `languages`), `name_style` (`native`|`original`|`both`),
 `word_level` (`off`|`basic`|`medium`), `stable_ms`, `live_interval_ms`, `hide_ms`, `region`, `name_band`,
 `model_repo`, `threads`, `device`.
