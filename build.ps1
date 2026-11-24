@@ -17,11 +17,19 @@ if (-not (Test-Path .venv)) { python -m venv .venv }
     --add-data "engine\r1999engine\data;r1999engine\data" `
     engine\run_engine.py
 
+$fontArgs = @()
+if (Test-Path ui\r1999ui\fonts) {
+    $fontArgs = @("--add-data", "ui\r1999ui\fonts;r1999ui\fonts")
+} else {
+    Write-Warning "ui\r1999ui\fonts is missing, so no font is bundled and Thai text uses a system font."
+}
+
 & .\.venv\Scripts\pyinstaller.exe --noconfirm --clean --noconsole --name R1999Translator `
     --icon ui\r1999ui\assets\icon.ico `
     --paths ui `
     --add-data "ui\r1999ui\assets;r1999ui\assets" `
     --add-data "ui\r1999ui\locales;r1999ui\locales" `
+    @fontArgs `
     ui\run_ui.py
 
 $target = "dist\R1999Translator\engine"

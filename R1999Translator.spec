@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 
 
 a = Analysis(
     ['ui/run_ui.py'],
     pathex=['ui'],
     binaries=[],
-    datas=[('ui/r1999ui/assets', 'r1999ui/assets'), ('ui/r1999ui/locales', 'r1999ui/locales')],
+    datas=[('ui/r1999ui/assets', 'r1999ui/assets'), ('ui/r1999ui/locales', 'r1999ui/locales')]
+    + ([('ui/r1999ui/fonts', 'r1999ui/fonts')] if os.path.isdir('ui/r1999ui/fonts') else []),
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

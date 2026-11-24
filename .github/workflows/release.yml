@@ -48,6 +48,25 @@ jobs:
         shell: pwsh
         run: .\.venv\Scripts\python.exe tests\test_ui.py
 
+      - name: Download the Kanit font
+        shell: pwsh
+        run: |
+          $commit = "130fcfb0ff422fec96b335616b2ca99f91914792"
+          $fonts = @{
+            "Kanit-Regular.ttf"  = "27170c049660b2f962d3ed28441fd20f4c743503ca031fec9c2b4542d6c52736"
+            "Kanit-Medium.ttf"   = "50a237034244026a7c63fe55e24e0b4298babe363cde043e032075b764c545a2"
+            "Kanit-SemiBold.ttf" = "67e64baf1a7e6e076435518ff0e6bf25c4d74b98143cd1a2688db906c0abce11"
+            "OFL.txt"            = "eb998cc5a685b240cdb46a0b5747e70334c8c57bbd7b1f6b044d75719358df67"
+          }
+          $dest = "ui/r1999ui/fonts"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          foreach ($name in $fonts.Keys) {
+            $file = Join-Path $dest $name
+            Invoke-WebRequest "https://raw.githubusercontent.com/google/fonts/$commit/ofl/kanit/$name" -OutFile $file
+            $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+            if ($hash -ne $fonts[$name]) { throw "$name has the SHA-256 $hash, expected $($fonts[$name])" }
+          }
+
       - name: Install NSIS
         shell: pwsh
         run: choco install nsis --no-progress -y

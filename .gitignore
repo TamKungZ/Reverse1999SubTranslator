@@ -12,3 +12,6 @@ dist/
 # Local data and previews
 preview/
 *.log
+
+# Fonts downloaded by the release workflow
+ui/r1999ui/fonts/
