@@ -37,8 +37,11 @@ class Controller:
         self.engine_proc = None
         self.engine_cfg = {}
         self.languages = {}
+        self.scripts = {}
         self.region = (0.19, 0.78, 0.90, 1.0)
         self.is_ready = False
+        self.frame_loop = None
+        self.previous_lang = None
         self.menu = None
         self.tray = None
         self._stop = threading.Event()
@@ -73,10 +76,13 @@ class Controller:
             self.client.info()
         except OSError:
             self.engine_proc = launch_engine(self.ui["engine_port"])
+        self.bridge.ready.emit(self.wait_for_engine())
+
+    def wait_for_engine(self):
         info = None
         for _ in range(BOOT_ATTEMPTS):
             if self._stop.is_set():
-                return
+                return None
             try:
                 info = self.client.info()
                 if info["state"] not in ("starting", "loading"):
@@ -84,7 +90,7 @@ class Controller:
             except OSError:
                 pass
             time.sleep(BOOT_POLL)
-        self.bridge.ready.emit(info)
+        return info
 
     def on_ready(self, info):
         if not info:
@@ -92,23 +98,30 @@ class Controller:
             return
         self.engine_cfg = info["config"]
         self.languages = info["languages"]
+        self.scripts = info.get("scripts", {})
         self.region = tuple(self.engine_cfg["region"])
         self.apply_font_default()
         if info["state"] == "model_missing":
-            if run_download_dialog(self.client, self.loc):
-                self.mark_ready()
-            else:
-                self.quit()
+            self.ask_model()
         elif info["state"] == "error":
             self.overlay.toast(self.loc.t("toast.engine_error", error=info["error"][:80]), 6000)
         else:
             self.mark_ready()
 
+    def ask_model(self):
+        if run_download_dialog(self.client, self.loc):
+            self.mark_ready()
+        elif not self.is_ready:
+            self.quit()
+        elif self.previous_lang and self.previous_lang != self.engine_cfg.get("target_lang"):
+            self.set_engine("target_lang", self.previous_lang)
+
     def mark_ready(self):
         self.is_ready = True
         self.overlay.toast(self.loc.t("toast.ready", key=self.ui["hotkeys"]["menu"]), 3000)
-        loop = FrameLoop(self.ui, self.client, self.tracker, self.region, self._stop, self.bridge.view.emit)
-        threading.Thread(target=loop.run, daemon=True).start()
+        if self.frame_loop is None:
+            self.frame_loop = FrameLoop(self.ui, self.client, self.tracker, self.region, self._stop, self.bridge.view.emit)
+            threading.Thread(target=self.frame_loop.run, daemon=True).start()
 
     def poll_game(self):
         if not self.tracker:
@@ -147,7 +160,8 @@ class Controller:
         self.overlay.set_menu(self.menu.rows())
 
     def new_menu(self):
-        fonts = fonts_for_language(self.engine_cfg.get("target_lang", "th"))
+        lang = self.engine_cfg.get("target_lang", "th")
+        fonts = fonts_for_language(lang, self.scripts.get(lang))
         return MenuModel(self.ui, self.engine_cfg, self.loc, self.languages, fonts, self.on_change, self.on_menu_action)
 
     def on_change(self, src, key, value):
@@ -157,6 +171,8 @@ class Controller:
                 self.loc.set(value)
                 self.tray.refresh()
         else:
+            if key == "target_lang":
+                self.previous_lang = self.engine_cfg.get("target_lang")
             self.set_engine(key, value)
         if key in ("locale", "target_lang"):
             self.apply_font_default()
@@ -185,7 +201,9 @@ class Controller:
         try:
             self.client.set_config(values)
         except OSError:
-            pass
+            return
+        if "target_lang" in values:
+            self.bridge.ready.emit(self.wait_for_engine())
 
     def quit(self):
         self._stop.set()
