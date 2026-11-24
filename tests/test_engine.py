@@ -12,6 +12,7 @@ from r1999engine.glossary import Glossary
 from r1999engine.languages import BUILTIN, LANGUAGES, complete, load_languages
 import numpy as np
 from r1999engine.ocr import DialogRead, line_cuts, plausible_name
+from r1999engine.ocr.lines import split_spans
 from r1999engine.session import Session
 from r1999engine.textutil import split_sentences, trim_partial_word
 from r1999engine.translate import FakeEngine, TextTranslator
@@ -130,6 +131,95 @@ def test_switching_to_a_language_with_its_own_model():
     finally:
         langs["id"]["model_repo"] = None
         host_module.is_ready, host_module.NLLBEngine = original
+
+
+class CountingReader:
+    def __init__(self):
+        self.reads, self.text, self.box = 0, "Hello there friend.", (160, 400, 960, 460)
+
+    def read(self, frame):
+        self.reads += 1
+        return DialogRead(text=self.text, top_y=0.9, box=self.box if self.text else None, style={})
+
+
+def test_unchanged_text_is_not_read_again_while_the_background_moves():
+    s, clock = make_session("wait")
+    reader = s.reader = CountingReader()
+    frame = type("F", (), {})()
+    base = np.full((540, 1280, 3), 40, np.uint8)
+    base[400:460, 160:960] = 200                 # the text
+    for step in range(10):
+        clock.t += 0.1
+        moving = base.copy()
+        moving[:300, :, :] = 40 + step * 5       # the background changes every frame, away from the text
+        frame.img = moving
+        s.process_frame(frame)
+    assert reader.reads <= 2                     # the first look and one refresh, not one per frame
+    clock.t += 0.1
+    changed = base.copy()
+    changed[400:460, 160:960] = 40               # the text disappears
+    frame.img = changed
+    reader.text = ""
+    before = reader.reads
+    s.process_frame(frame)
+    assert reader.reads == before + 1 and s._box is None
+
+
+def test_text_that_appears_in_a_quiet_scene_is_found():
+    s, clock = make_session("wait")
+    reader = s.reader = CountingReader()
+    reader.text = ""
+    frame = type("F", (), {})()
+    frame.img = np.full((540, 1280, 3), 40, np.uint8)
+    s.process_frame(frame)
+    clock.t += 0.3
+    frame.img = frame.img.copy()
+    frame.img[400:460, 160:960] = 200
+    reader.text = "Hello there friend."
+    s.process_frame(frame)
+    assert reader.reads == 2 and s._box is not None
+    s.reset()
+    assert s._box is None and s._read_small is None
+
+
+def test_translation_speed_settings():
+    from r1999engine.translate.engines import default_threads
+    cfg = EngineConfig(Path(tempfile.mkdtemp()) / "config.json")
+    assert cfg["threads"] == 0 and cfg["beam_size"] == 2        # 0 means a number picked from the machine
+    cfg.update({"beam_size": 1, "threads": 6}, save=False)
+    assert cfg["beam_size"] == 1 and cfg["threads"] == 6
+    cfg.update({"beam_size": 99, "threads": -3}, save=False)
+    assert cfg["beam_size"] == 5 and cfg["threads"] == 0
+    assert 2 <= default_threads() <= 8
+
+
+def test_a_centered_line_that_starts_left_of_the_usual_area_is_read_whole():
+    import cv2
+    from r1999engine.ocr import DialogReader, Frame
+    w, h = 1920, 1080
+    frame = np.full((h, w, 3), (26, 28, 30), np.uint8)
+    cv2.putText(frame, "Sounds like your friend just ran into trouble.", (250, 975), cv2.FONT_HERSHEY_DUPLEX, 1.4, (220, 222, 225), 2, cv2.LINE_AA)
+    reader = DialogReader(Glossary())
+    region = (0.08, 0.78, 0.90, 1.0)
+    crop = np.ascontiguousarray(frame[int(region[1] * h):, int(region[0] * w):int(region[2] * w)])
+    read = reader.read(Frame(crop, w, h, region))
+    assert read.text.startswith("Sounds like") and read.text.endswith("trouble.")
+    x0, y0, x1, y1 = read.box
+    assert x0 < (0.19 - 0.08) * w and y1 > y0           # the box covers the line, including the part left of the usual area
+
+
+def test_very_wide_lines_are_read_in_two_pieces_cut_between_words():
+    mask = np.zeros((40, 1700), bool)
+    for start in range(20, 1650, 60):
+        mask[8:30, start:start + 48] = True      # words of 48 pixels with gaps of 12
+    mask[:, 860:880] = False                     # a wider gap near the middle
+    spans = split_spans(mask)
+    assert len(spans) == 2 and spans[0][1] < 860 and spans[1][0] >= 880
+    assert split_spans(mask[:, :900]) == [(20, 884 - 8)] or len(split_spans(mask[:, :900])) == 1   # short lines stay whole
+    solid = np.zeros((40, 1700), bool)
+    solid[8:30, 20:1680] = True
+    assert split_spans(solid) == [(20, 1679)]    # no gap to cut at, so it is left whole
+    assert split_spans(np.zeros((40, 100), bool)) == []
 
 
 def test_split():
