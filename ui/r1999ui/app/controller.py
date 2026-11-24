@@ -16,7 +16,7 @@ from .download import run_download_dialog
 from .frames import FrameLoop
 from .icon import app_icon
 from .launcher import launch_engine
-from .notify import beep
+from .notify import beep, cue
 from .screenshot import take
 from .tray import Tray
 
@@ -205,10 +205,12 @@ class Controller:
     def on_action(self, action):
         if action == "toggle":
             self.set_ui("enabled", not self.ui["enabled"])
+            self.play_cue("on" if self.ui["enabled"] else "off")
             self.overlay.toast(self.loc.t("toast.translation", state=self.loc.t("val.on" if self.ui["enabled"] else "val.off")))
         elif action == "mode":
             new = "word" if self.engine_cfg.get("mode") == "sentence" else "sentence"
             self.set_engine("mode", new)
+            self.play_cue("switch")
             self.overlay.toast(self.loc.t("toast.mode", mode=self.loc.t("opt.mode." + new)))
         elif action == "menu":
             self.toggle_menu()
@@ -221,6 +223,10 @@ class Controller:
             else:
                 self.menu.handle(key)
                 self.overlay.set_menu(self.menu.rows())
+
+    def play_cue(self, name):
+        if self.ui["sounds"]:
+            cue(name)
 
     def screenshot(self):
         state = self.tracker.state if self.tracker else None
@@ -252,6 +258,8 @@ class Controller:
     def on_change(self, src, key, value):
         if src == "ui":
             self.set_ui(key, value)
+            if key == "enabled":
+                self.play_cue("on" if value else "off")
             if key == "locale":
                 self.loc.set(value)
                 self.tray.refresh()
