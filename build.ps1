@@ -7,7 +7,7 @@ Get-Process R1999Translator, r1999-engine -ErrorAction SilentlyContinue | Stop-P
 Start-Sleep -Seconds 1
 
 if (-not (Test-Path .venv)) { python -m venv .venv }
-& .\.venv\Scripts\python.exe -m pip install -r requirements.txt pyinstaller
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt pyinstaller==6.22.3
 
 & .\.venv\Scripts\pyinstaller.exe --noconfirm --clean --noconsole --name r1999-engine `
     --icon ui\r1999ui\assets\icon.ico `
