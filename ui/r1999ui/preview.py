@@ -53,7 +53,7 @@ def render_image(src, view, out, menu=False, toast="", ui_over=None, locale="en"
     if menu:
         engine_cfg = {"mode": "sentence", "timing": "wait", "target_lang": "th", "name_style": "native",
                       "word_level": "basic", "stable_ms": 450}
-        model = MenuModel(ui, engine_cfg, loc, {"th": "ไทย", "ja": "日本語", "zh": "中文"}, ["Leelawadee UI", "Sarabun", "Tahoma"], lambda *a: None, lambda *a: None)
+        model = MenuModel(ui, engine_cfg, loc, {"th": "ไทย", "id": "Indonesia", "vi": "Tiếng Việt"}, ["Leelawadee UI", "Sarabun", "Tahoma"], lambda *a: None, lambda *a: None)
         model.index = 1
         st.menu_rows, st.menu_reveal = model.rows(), 1.0
         st.view = None

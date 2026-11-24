@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "ui"))
 sys.path.insert(0, str(ROOT / "engine"))
 
 import cv2
+import numpy as np
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication
@@ -26,7 +27,22 @@ from r1999ui.settings import UiSettings
 
 app = QApplication.instance() or QApplication([])
 render.load_fonts()
-IMG = "/mnt/user-data/uploads/3d6b09cb-image.jpg"
+
+def synthetic_frame(w=1920, h=1080):
+    from PySide6.QtGui import QColor, QImage, QPainter
+
+    img = QImage(w, h, QImage.Format.Format_RGB888)
+    img.fill(QColor(30, 28, 26))
+    p = QPainter(img)
+    p.setPen(QColor(225, 222, 220))
+    p.setFont(render.make_font(40, family="Sarabun"))
+    p.drawText(425, 905, "Regulus")
+    p.setFont(render.make_font(44, family="Sarabun"))
+    p.drawText(412, 975, "Sounds like your friend just ran into trouble.")
+    p.end()
+    stride = img.bytesPerLine()
+    rows = np.frombuffer(img.constBits(), dtype=np.uint8, count=h * stride).reshape(h, stride)
+    return cv2.cvtColor(rows[:, : w * 3].reshape(h, w, 3).copy(), cv2.COLOR_RGB2BGR)
 
 
 def pump(ms):
@@ -105,6 +121,7 @@ def test_locales_complete():
     assert loc.t("val.on") == "เปิด" and loc.t("toast.mode", mode="x") == "โหมด: x"
     assert Locale("zz").code == "en" and Locale("en").t("no.such.key") == "no.such.key"
     assert set(Locale("en").available()) >= {"en", "th"}
+    assert Locale("en").t("toast.ready", key="F9") == "Ready. Press F9 for settings"
 
 
 def test_style_matching_sizes():
@@ -173,7 +190,7 @@ def test_end_to_end_with_engine():
             time.sleep(0.5)
         else:
             raise AssertionError("engine not ready")
-        img = cv2.imread(IMG)
+        img = synthetic_frame()
         h, w = img.shape[:2]
         region = (0.19, 0.78, 0.90, 1.0)
         crop = img[int(region[1] * h):, int(region[0] * w):int(region[2] * w)].copy()
