@@ -251,6 +251,21 @@ def test_centered_menu_lines_and_left_aligned_dialog_lines_are_told_apart():
     assert tracker.values["text_left"] == 0.40
 
 
+def test_the_engine_starts_and_says_what_to_install_when_opencv_cannot_be_loaded():
+    import subprocess
+    import r1999engine.server.host as host_module
+    code = "import sys; sys.modules['cv2'] = None; import r1999engine.server, r1999engine.ocr; print('started')"
+    env = dict(os.environ, APPDATA=tempfile.mkdtemp())
+    run = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent.parent / "engine", env=env, capture_output=True, text=True)
+    assert run.stdout.strip() == "started", run.stderr[-300:]
+    cryptic = ImportError("DLL load failed while importing cv2: The specified module could not be found.", name="cv2")
+    assert "Media Feature Pack" in host_module.explain(cryptic) and "cv2" in host_module.explain(cryptic)
+    assert host_module.explain(ValueError("boom")) == "boom"
+    host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
+    host._fail(cryptic)
+    assert host.state == "error" and host.info()["error"].startswith("Install the Media Feature Pack")
+
+
 def test_split():
     assert split_sentences("No, no. Don't go. Oh, come on! That was the best part!") == [
         "No, no.", "Don't go.", "Oh, come on!", "That was the best part!"]
