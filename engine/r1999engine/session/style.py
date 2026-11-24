@@ -14,7 +14,7 @@ DEFAULT_STYLE = {
 }
 
 STYLE_WINDOW = 9
-MEDIAN_KEYS = ("name_cap", "name_to_text", "text_left", "name_left", "pitch")
+MEDIAN_KEYS = ("text_ink_h", "name_cap", "name_to_text", "text_left", "name_left", "pitch")
 LAYOUT_KEYS = ("text_left", "name_left", "name_to_text")   # these belong to one subtitle, the next one may be laid out differently
 INK_HEIGHT_RANGE = (0.02, 0.05)
 
@@ -29,16 +29,13 @@ class StyleTracker:
 
     def __init__(self):
         self.values = dict(DEFAULT_STYLE)
-        self._measured_h = None
         self._history = {}
 
     def merge(self, new):
         for key, value in (new or {}).items():
-            if key == "text_ink_h":
-                if INK_HEIGHT_RANGE[0] <= value <= INK_HEIGHT_RANGE[1]:
-                    self._measured_h = max(self._measured_h or 0.0, value)
-                    self.values[key] = self._measured_h
-            elif key in MEDIAN_KEYS:
+            if key == "text_ink_h" and not INK_HEIGHT_RANGE[0] <= value <= INK_HEIGHT_RANGE[1]:
+                continue
+            if key in MEDIAN_KEYS:
                 if value and value > 0:
                     hist = self._history.setdefault(key, deque(maxlen=STYLE_WINDOW))
                     hist.append(value)
