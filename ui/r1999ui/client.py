@@ -37,9 +37,6 @@ class EngineClient:
     def download_model(self):
         return self._call("/model/download", b"{}")
 
-    def cancel_download(self):
-        return self._call("/model/cancel", b"{}")
-
     def shutdown(self):
         try:
             return self._call("/shutdown", b"{}", timeout=2)

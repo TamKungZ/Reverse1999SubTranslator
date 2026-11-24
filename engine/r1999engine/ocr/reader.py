@@ -100,7 +100,6 @@ class DialogReader:
     def _fill_name(self, read, name, x0_px, top_px, text_top, ch, cw):
         style = read.style
         if name.bbox is not None:
-            read.name_ink = True
             name_top = top_px + name.bbox[1]
             read.top_y = min(read.top_y, name_top / ch)
             if name.info and name.info["cap"]:

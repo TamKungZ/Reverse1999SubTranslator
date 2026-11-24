@@ -1,4 +1,3 @@
-import time
 
 from PySide6.QtCore import QRect, QTimer, Qt
 from PySide6.QtGui import QPainter
@@ -136,6 +135,5 @@ class OverlayWindow(QWidget):
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         p.fillRect(self.rect(), Qt.GlobalColor.transparent)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        self.state.pulse = time.monotonic()
         render.paint(p, self.width(), self.height(), self.state)
         p.end()

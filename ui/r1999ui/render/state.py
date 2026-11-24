@@ -13,6 +13,5 @@ class RenderState:
     row_ratio: list = field(default_factory=list)
     toast: str = ""
     toast_alpha: float = 0.0
-    pulse: float = 0.0
     hotkeys: dict = field(default_factory=dict)
     t: object = staticmethod(lambda key, **kw: key)

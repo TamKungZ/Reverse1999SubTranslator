@@ -17,6 +17,5 @@ class DialogRead:
     speaker: str = ""
     speaker_known: bool = False
     top_y: float = 0.0
-    name_ink: bool = False
     style: dict = None
     box: tuple = None
