@@ -142,8 +142,8 @@ def test_centered_subtitles_are_drawn_around_their_center():
     assert render.resolve_style(view, ui, 1920, 1080, 1.0)["align"] == "left"
     from r1999ui.render.text import layout
     font = render.make_font(40)
-    _, lines, _ = layout("short line", [], font, 1000.0, 0.0, "center")
-    _, plain, _ = layout("short line", [], font, 1000.0, 0.0)
+    centered, lines, _ = layout("short line", [], font, 1000.0, 0.0, "center")   # the layouts must stay alive while their lines are used
+    left, plain, _ = layout("short line", [], font, 1000.0, 0.0)
     assert plain[0].position().x() == 0 and abs(lines[0].position().x() - (1000.0 - lines[0].naturalTextWidth()) / 2) < 1e-6
 
 
