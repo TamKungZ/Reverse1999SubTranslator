@@ -11,7 +11,6 @@ from ..i18n import Locale
 from ..menu import MenuModel
 from ..overlay import OverlayWindow
 from .download import run_download_dialog
-from .fonts import fonts_for_language
 from .frames import FrameLoop
 from .launcher import launch_engine
 from .tray import Tray
@@ -32,12 +31,13 @@ class Bridge(QObject):
 class Controller:
     def __init__(self, app, ui):
         self.app, self.ui = app, ui
-        self.loc = Locale(ui["locale"])
+        self.loc = Locale(ui["locale"], usable=lambda script: render.supports("", script))
         self.client = EngineClient(ui["engine_port"])
         self.engine_proc = None
         self.engine_cfg = {}
         self.languages = {}
         self.scripts = {}
+        self.language_fonts = {}
         self.region = (0.19, 0.78, 0.90, 1.0)
         self.is_ready = False
         self.frame_loop = None
@@ -97,16 +97,28 @@ class Controller:
             self.overlay.toast(self.loc.t("toast.engine_failed"), 5000)
             return
         self.engine_cfg = info["config"]
-        self.languages = info["languages"]
         self.scripts = info.get("scripts", {})
+        self.language_fonts = info.get("fonts", {})
+        self.languages = {c: n for c, n in info["languages"].items() if render.supports(c, self.scripts.get(c))}
         self.region = tuple(self.engine_cfg["region"])
         self.apply_font_default()
+        if self.switch_from_unusable_language(info["languages"]):
+            return
         if info["state"] == "model_missing":
             self.ask_model()
         elif info["state"] == "error":
             self.overlay.toast(self.loc.t("toast.engine_error", error=info["error"][:80]), 6000)
         else:
             self.mark_ready()
+
+    def switch_from_unusable_language(self, names):
+        lang = self.engine_cfg.get("target_lang")
+        if not self.languages or lang in self.languages:
+            return False
+        other = next(iter(self.languages))
+        self.overlay.toast(self.loc.t("toast.language_unavailable", lang=names.get(lang, lang), other=self.languages[other]), 5000)
+        self.set_engine("target_lang", other)
+        return True
 
     def ask_model(self):
         if run_download_dialog(self.client, self.loc):
@@ -161,7 +173,7 @@ class Controller:
 
     def new_menu(self):
         lang = self.engine_cfg.get("target_lang", "th")
-        fonts = fonts_for_language(lang, self.scripts.get(lang))
+        fonts = render.families_for(lang, self.scripts.get(lang))
         return MenuModel(self.ui, self.engine_cfg, self.loc, self.languages, fonts, self.on_change, self.on_menu_action)
 
     def on_change(self, src, key, value):
@@ -182,7 +194,8 @@ class Controller:
                 self.menu.index = index
 
     def apply_font_default(self):
-        render.set_thai_default("th" in (self.loc.code, self.engine_cfg.get("target_lang", "th")))
+        codes = dict.fromkeys([self.engine_cfg.get("target_lang"), self.loc.code])
+        render.set_languages([(c, self.scripts[c], self.language_fonts.get(c, [])) for c in codes if c in self.scripts])
         self.overlay.update()
 
     def on_menu_action(self, name):

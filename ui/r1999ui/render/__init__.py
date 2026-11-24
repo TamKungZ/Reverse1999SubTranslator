@@ -1,6 +1,6 @@
 from PySide6.QtGui import QPainter
 
-from .fonts import load_fonts, make_font, set_thai_default
+from .fonts import families_for, load_fonts, make_font, set_languages, supports
 from .menu import draw_menu
 from .state import RenderState
 from .style import resolve_style
@@ -9,7 +9,9 @@ from .translation import draw_translation
 
 VISIBLE = 0.01
 
-__all__ = ["RenderState", "load_fonts", "make_font", "paint", "resolve_style", "set_thai_default"]
+__all__ = [
+    "RenderState", "families_for", "load_fonts", "make_font", "paint", "resolve_style", "set_languages", "supports",
+]
 
 
 def paint(p, W, H, st):

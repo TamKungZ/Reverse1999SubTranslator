@@ -29,20 +29,11 @@ app = QApplication.instance() or QApplication([])
 render.load_fonts()
 
 def synthetic_frame(w=1920, h=1080):
-    from PySide6.QtGui import QColor, QImage, QPainter
-
-    img = QImage(w, h, QImage.Format.Format_RGB888)
-    img.fill(QColor(30, 28, 26))
-    p = QPainter(img)
-    p.setPen(QColor(225, 222, 220))
-    p.setFont(render.make_font(40, family="Sarabun"))
-    p.drawText(425, 905, "Regulus")
-    p.setFont(render.make_font(44, family="Sarabun"))
-    p.drawText(412, 975, "Sounds like your friend just ran into trouble.")
-    p.end()
-    stride = img.bytesPerLine()
-    rows = np.frombuffer(img.constBits(), dtype=np.uint8, count=h * stride).reshape(h, stride)
-    return cv2.cvtColor(rows[:, : w * 3].reshape(h, w, 3).copy(), cv2.COLOR_RGB2BGR)
+    frame = np.full((h, w, 3), (26, 28, 30), np.uint8)
+    light = (220, 222, 225)
+    cv2.putText(frame, "Regulus", (425, 905), cv2.FONT_HERSHEY_DUPLEX, 1.5, light, 2, cv2.LINE_AA)
+    cv2.putText(frame, "Sounds like your friend just ran into trouble.", (412, 975), cv2.FONT_HERSHEY_DUPLEX, 1.4, light, 2, cv2.LINE_AA)
+    return frame
 
 
 def pump(ms):
@@ -116,12 +107,31 @@ def test_locales_complete():
     from r1999ui.i18n import BUILTIN, Locale
     en = json.loads((BUILTIN / "en.json").read_text(encoding="utf-8"))
     th = json.loads((BUILTIN / "th.json").read_text(encoding="utf-8"))
-    assert set(en) == set(th)
+    assert {k for k in en if not k.startswith("_")} == {k for k in th if not k.startswith("_")}
     loc = Locale("th")
     assert loc.t("val.on") == "เปิด" and loc.t("toast.mode", mode="x") == "โหมด: x"
     assert Locale("zz").code == "en" and Locale("en").t("no.such.key") == "no.such.key"
     assert set(Locale("en").available()) >= {"en", "th"}
     assert Locale("en").t("toast.ready", key="F9") == "Ready. Press F9 for settings"
+    no_thai = Locale("th", usable=lambda script: script != "Thai")
+    assert no_thai.code == "en" and "th" not in no_thai.available() and "th" in Locale("th").available()
+
+
+def test_language_fonts_and_fallback():
+    fonts = render.fonts
+    original = fonts.families_for
+    fonts.families_for = lambda lang, script: {"th": ["Tahoma", "Zed"], "ar": ["Arabic Sans"]}.get(lang, [])
+    try:
+        fonts.set_languages([("th", "Thai", ["Kanit", "Tahoma"]), ("ar", "Arab", ["Missing"])])
+        assert fonts.preferred == ["Kanit", "Tahoma", "Missing"]
+        assert fonts.fallback() == ["Arabic Sans"]
+        families = fonts.make_font(20).families()
+        assert families[:3] == ["Kanit", "Tahoma", "Missing"] and families[-1] == "Arabic Sans"
+        assert fonts.make_font(20, family="Arial").families()[:2] == ["Arial", "Kanit"]
+    finally:
+        fonts.families_for = original
+        fonts.set_languages([])
+    assert fonts.preferred == [] and fonts.fallback() == []
 
 
 def test_style_matching_sizes():
