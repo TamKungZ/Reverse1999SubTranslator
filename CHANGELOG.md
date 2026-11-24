@@ -6,6 +6,7 @@
 
 - A message at start says that the program is running and lives in the system tray. It can be turned off from the message itself. Starting a second copy now says that it is already running instead of doing nothing.
 - Messages in the corner of the screen, with a sound, for loading and downloading the translation model, errors and screenshots. The menu has a switch for the sounds.
+- The hotkeys play a short sound: one for switching translation on, one for off and one for changing the mode. The menu switch for the sounds turns them off.
 - F10 saves a screenshot of the game with the translation drawn on it. The overlay is hidden from screen capture, so other tools could not show it.
 
 ### Changed
