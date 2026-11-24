@@ -13,6 +13,7 @@ FRAME_CHANGE = 0.8      # brightness change of the whole picture that makes the 
 TEXT_CHANGE = 1.5       # the same inside the box of the text that is on screen
 IDLE_INTERVAL = 0.2     # without text on screen the picture is read at most this often
 REFRESH_INTERVAL = 0.8  # with text on screen it is read at least this often
+SETTLE_INTERVAL = 0.25
 BOX_PAD = 2             # in samples
 HIDE_SIMILARITY = 0.9
 
@@ -99,13 +100,11 @@ class Session:
 
     @staticmethod
     def _sample_box(box, shape):
+        """The part of the picture to watch: from the top of the text to the bottom and across the whole width,
+        because text that is being typed grows to the right and onto new lines, outside the box it had when it was read."""
         if box is None:
             return None
-        x0, y0, x1, y1 = box
-        return (
-            max(0, x0 // SAMPLE - BOX_PAD), max(0, y0 // SAMPLE - BOX_PAD),
-            min(shape[1], x1 // SAMPLE + BOX_PAD + 1), min(shape[0], y1 // SAMPLE + BOX_PAD + 1),
-        )
+        return 0, max(0, box[1] // SAMPLE - BOX_PAD), shape[1], shape[0]
 
     def _should_read(self, now):
         """Looks at the picture again only when something that matters changed: the text on screen, or any new text."""
@@ -115,7 +114,8 @@ class Session:
         elapsed = now - self._last_read
         if self._box is None:
             return elapsed >= IDLE_INTERVAL and float(np.abs(small - ref).mean()) > FRAME_CHANGE
-        if elapsed >= REFRESH_INTERVAL:
+        settling = now - self.text.last_change < self.cfg["stable_ms"] / 1000.0 + REFRESH_INTERVAL
+        if elapsed >= (SETTLE_INTERVAL if settling else REFRESH_INTERVAL):
             return True
         x0, y0, x1, y1 = self._box
         return float(np.abs(small[y0:y1, x0:x1] - ref[y0:y1, x0:x1]).mean()) > TEXT_CHANGE
