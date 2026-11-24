@@ -109,6 +109,8 @@ class Controller:
             self.overlay.toast(self.loc.t("toast.engine_error", error=info["error"][:80]), 6000)
         else:
             self.mark_ready()
+        if self.engine_cfg.get("translator") != info.get("translator", self.engine_cfg.get("translator")):
+            self.overlay.toast(self.loc.t("toast.translator_unavailable", lang=self.languages.get(self.engine_cfg["target_lang"], "")), 5000)
 
     def ask_model(self):
         if run_download_dialog(self.client, self.loc):

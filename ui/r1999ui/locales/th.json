@@ -10,6 +10,7 @@
   "toast.hotkey_error": "ฮอตคีย์ใช้ไม่ได้: {error}",
   "toast.engine_failed": "เริ่ม engine แปลภาษาไม่สำเร็จ",
   "toast.engine_error": "engine ผิดพลาด: {error}",
+  "toast.translator_unavailable": "Argos ไม่มีโมเดลสำหรับ{lang} ใช้ NLLB-200 แทน",
   "setup.text": "ต้องดาวน์โหลดโมเดลแปลภาษาครั้งเดียว\nไฟล์จะถูกเก็บในเครื่องและแปลแบบออฟไลน์",
   "setup.downloading": "กำลังดาวน์โหลด {file}  ({done} / {total} MB)",
   "setup.loading": "กำลังโหลดโมเดล...",

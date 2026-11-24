@@ -10,6 +10,7 @@
   "toast.hotkey_error": "Hotkeys unavailable: {error}",
   "toast.engine_failed": "Could not start the translation engine",
   "toast.engine_error": "Engine error: {error}",
+  "toast.translator_unavailable": "Argos has no model for {lang}. Using NLLB-200",
   "setup.text": "A translation model must be downloaded once.\nIt is stored locally and translation runs offline.",
   "setup.downloading": "Downloading {file}  ({done} / {total} MB)",
   "setup.loading": "Loading the model...",
