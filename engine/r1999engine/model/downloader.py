@@ -1,22 +1,10 @@
 import json
 import threading
 import urllib.request
-from pathlib import Path
 
-from .config import data_dir
+from .paths import REQUIRED, is_ready, model_dir
 
-REQUIRED = ("config.json", "model.bin", "sentencepiece.bpe.model")
-
-
-def model_dir(repo):
-    return data_dir() / "models" / repo.replace("/", "__")
-
-
-def is_ready(directory):
-    directory = Path(directory)
-    if not all((directory / name).is_file() for name in REQUIRED):
-        return False
-    return any((directory / n).is_file() for n in ("shared_vocabulary.json", "shared_vocabulary.txt"))
+CHUNK = 1 << 20
 
 
 class Downloader:
@@ -53,14 +41,7 @@ class Downloader:
         try:
             dest = model_dir(repo)
             dest.mkdir(parents=True, exist_ok=True)
-            api = "https://huggingface.co/api/models/%s?blobs=true" % repo
-            with urllib.request.urlopen(api, timeout=30) as resp:
-                info = json.load(resp)
-            wanted = [
-                s
-                for s in info.get("siblings", [])
-                if s["rfilename"] in REQUIRED or s["rfilename"].startswith("shared_vocabulary")
-            ]
+            wanted = self._wanted_files(repo)
             self.total = sum(int(s.get("size") or 0) for s in wanted)
             for sib in wanted:
                 self._fetch(repo, sib["rfilename"], dest)
@@ -72,6 +53,17 @@ class Downloader:
         except Exception as exc:
             self.state = "cancelled" if self._cancel.is_set() else "error"
             self.error = str(exc)
+
+    @staticmethod
+    def _wanted_files(repo):
+        api = "https://huggingface.co/api/models/%s?blobs=true" % repo
+        with urllib.request.urlopen(api, timeout=30) as resp:
+            info = json.load(resp)
+        return [
+            s
+            for s in info.get("siblings", [])
+            if s["rfilename"] in REQUIRED or s["rfilename"].startswith("shared_vocabulary")
+        ]
 
     def _fetch(self, repo, name, dest):
         target = dest / name
@@ -89,7 +81,7 @@ class Downloader:
             self.done += start
             with open(part, mode) as fh:
                 while True:
-                    chunk = resp.read(1 << 20)
+                    chunk = resp.read(CHUNK)
                     if not chunk:
                         break
                     if self._cancel.is_set():
