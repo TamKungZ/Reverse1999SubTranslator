@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import tempfile
@@ -8,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "engine"))
 
 from r1999engine.config import EngineConfig
 from r1999engine.glossary import Glossary
+from r1999engine.languages import BUILTIN, LANGUAGES, complete, load_languages
 import numpy as np
 from r1999engine.ocr import DialogRead, line_cuts, plausible_name
 from r1999engine.session import Session
@@ -65,6 +67,62 @@ def test_scenery_in_name_band_is_not_a_name():
     assert plausible_name((57, 0, 608, 47), {"cap": 29, "color": "#a99d84"}, 1080)   # Vertin, with glow wider than the name
     assert not plausible_name((93, 0, 598, 56), {"cap": 6, "color": "#d3d2cc"}, 1080)   # floor reflection read as "SA"
     assert not plausible_name(None, None, 1080)
+
+
+def test_language_defaults_from_the_nllb_code():
+    th, de, ja = complete("th", {"name": "x", "nllb": "tha_Thai"}), complete("de", {"name": "Deutsch", "nllb": "deu_Latn"}), complete("ja", {"name": "x", "nllb": "jpn_Jpan"})
+    assert (th["join"], th["native_names"], th["script"]) == (" ", True, "Thai")
+    assert (de["join"], de["native_names"], de["model_repo"]) == (" ", False, None)
+    assert ja["join"] == ""
+    assert complete("xx", {"name": "x", "nllb": "deu_Latn", "join": "", "native_names": True, "model_repo": "me/model"})["model_repo"] == "me/model"
+    assert set(LANGUAGES) >= {"th", "id", "vi"}
+
+
+def test_user_language_file_adds_overrides_and_reports_errors():
+    folder = Path(tempfile.mkdtemp())
+    user = folder / "languages.json"
+    user.write_text(json.dumps({
+        "_about": "ignored",
+        "de": {"name": "Deutsch", "nllb": "deu_Latn"},
+        "th": {"name": "Thai", "nllb": "tha_Thai", "model_repo": "me/thai-model"},
+        "bad": {"name": "No code"},
+        "also bad!": {"name": "x", "nllb": "deu_Latn"},
+        "repo": {"name": "x", "nllb": "deu_Latn", "model_repo": "no-slash"},
+    }), encoding="utf-8")
+    languages, errors = load_languages([BUILTIN, user, folder / "missing.json"])
+    assert set(languages) == {"th", "id", "vi", "de"} and languages["th"]["model_repo"] == "me/thai-model"
+    assert len(errors) == 3 and all("languages.json" in e for e in errors)
+    user.write_text("[]", encoding="utf-8")
+    assert load_languages([user])[1] == ["languages.json: the file must contain a JSON object"]
+
+
+def test_switching_to_a_language_with_its_own_model():
+    import r1999engine.server.host as host_module
+    from r1999engine.languages import LANGUAGES as langs
+
+    class Stub:
+        def __init__(self, *args):
+            self.args = args
+
+    langs["id"]["model_repo"] = "me/indonesian-model"
+    original = (host_module.is_ready, host_module.NLLBEngine)
+    try:
+        host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
+        host.session.reader = object()
+        host_module.is_ready = lambda directory: "indonesian" not in str(directory)
+        host_module.NLLBEngine = Stub
+        host._load_model(host.repo())
+        assert host.state == "ready" and host.info()["model_repo"] == host.cfg["model_repo"]
+        host.update_config({"target_lang": "id"})
+        assert host.state == "model_missing" and host.session.translator is None and host.info()["model_repo"] == "me/indonesian-model"
+        host_module.is_ready = lambda directory: True
+        host._load_model("me/indonesian-model")
+        assert host.state == "ready" and host.session.translator.engine.args[0].name.endswith("me__indonesian-model")
+        host.update_config({"target_lang": "th"})
+        assert host.state == "ready" and host.session.translator.engine is host._engines[host.cfg["model_repo"]]
+    finally:
+        langs["id"]["model_repo"] = None
+        host_module.is_ready, host_module.NLLBEngine = original
 
 
 def test_split():
