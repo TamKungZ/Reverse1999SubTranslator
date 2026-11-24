@@ -1,18 +1,8 @@
-import json
-import os
 import threading
 from pathlib import Path
 
-APP_NAME = "R1999Translator"
-
-LANGUAGES = {
-    "th": {"name": "ไทย", "nllb": "tha_Thai", "join": " ", "native_names": True},
-    "ja": {"name": "日本語", "nllb": "jpn_Jpan", "join": "", "native_names": True},
-    "zh": {"name": "中文", "nllb": "zho_Hans", "join": "", "native_names": True},
-    "ko": {"name": "한국어", "nllb": "kor_Hang", "join": " ", "native_names": True},
-    "id": {"name": "Indonesia", "nllb": "ind_Latn", "join": " ", "native_names": False},
-    "vi": {"name": "Tiếng Việt", "nllb": "vie_Latn", "join": " ", "native_names": False},
-}
+from .languages import LANGUAGES
+from .storage import clone, data_dir, read_json, write_json
 
 DEFAULTS = {
     "mode": "sentence",
@@ -45,63 +35,56 @@ RANGES = {
     "threads": (1, 32),
 }
 
+BOXES = {"region": 4, "name_band": 2}
+STRINGS = ("model_repo", "device")
+REJECT = object()
 
-def data_dir():
-    base = os.environ.get("APPDATA")
-    root = Path(base) if base else Path.home() / ".config"
-    path = root / APP_NAME / "engine"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+
+def coerce(key, value):
+    if key in CHOICES:
+        return value if value in CHOICES[key] else REJECT
+    if key in RANGES:
+        if not isinstance(value, (int, float)):
+            return REJECT
+        lo, hi = RANGES[key]
+        return int(min(hi, max(lo, value)))
+    if key in BOXES:
+        if not (isinstance(value, list) and len(value) == BOXES[key]):
+            return REJECT
+        return [float(v) for v in value]
+    if key in STRINGS and not isinstance(value, str):
+        return REJECT
+    return value
 
 
 class EngineConfig:
     def __init__(self, path=None):
         self.path = Path(path) if path else data_dir() / "config.json"
-        self.data = json.loads(json.dumps(DEFAULTS))
+        self.data = clone(DEFAULTS)
         self._lock = threading.Lock()
-        try:
-            stored = json.loads(self.path.read_text(encoding="utf-8"))
-            self.update(stored, save=False)
-        except (OSError, ValueError):
-            pass
+        self.update(read_json(self.path, {}), save=False)
 
     def __getitem__(self, key):
         return self.data[key]
 
     def snapshot(self):
         with self._lock:
-            return json.loads(json.dumps(self.data))
+            return clone(self.data)
 
     def update(self, values, save=True):
         changed = {}
         with self._lock:
-            for key, value in values.items():
+            for key, raw in values.items():
                 if key not in DEFAULTS:
                     continue
-                if key in CHOICES and value not in CHOICES[key]:
+                value = coerce(key, raw)
+                if value is REJECT or self.data[key] == value:
                     continue
-                if key in RANGES:
-                    if not isinstance(value, (int, float)):
-                        continue
-                    lo, hi = RANGES[key]
-                    value = int(min(hi, max(lo, value)))
-                if key in ("region", "name_band"):
-                    if not (isinstance(value, list) and len(value) == (4 if key == "region" else 2)):
-                        continue
-                    value = [float(v) for v in value]
-                if key in ("model_repo", "device") and not isinstance(value, str):
-                    continue
-                if self.data[key] != value:
-                    self.data[key] = value
-                    changed[key] = value
+                self.data[key] = value
+                changed[key] = value
         if changed and save:
             self.save()
         return changed
 
     def save(self):
-        try:
-            self.path.write_text(
-                json.dumps(self.snapshot(), indent=2, ensure_ascii=False), encoding="utf-8"
-            )
-        except OSError:
-            pass
+        write_json(self.path, self.snapshot(), indent=2)
