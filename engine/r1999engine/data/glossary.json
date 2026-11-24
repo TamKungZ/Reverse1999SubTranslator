@@ -1,0 +1,32 @@
+{
+  "names": {
+    "Vertin": {"th": "เวอร์ติน"},
+    "Regulus": {"th": "เรกูลัส"},
+    "Sonetto": {"th": "โซเนตโต"},
+    "Voyager": {"th": "โวเอเจอร์"},
+    "Eagle": {"th": "อีเกิล"},
+    "Bkornblume": {"th": "บอร์นบลูเม"},
+    "Lilya": {"th": "ลิลยา"},
+    "Margery": {"th": "มาร์เจอรี"},
+    "Druvis III": {"th": "ดรูวิส III"},
+    "Tennant": {"th": "เทนแนนต์"},
+    "Pickles": {"th": "พิกเคิลส์"},
+    "Matilda": {"th": "มาทิลด้า"},
+    "Marcus": {"th": "มาร์คัส"},
+    "Schneider": {"th": "ชไนเดอร์"},
+    "Horropedia": {"th": "ฮอร์โรพีเดีย"},
+    "Kakania": {"th": "คาคาเนีย"},
+    "Medicine Pocket": {"th": "เมดิซิน พ็อกเก็ต"},
+    "Z": {"th": "Z"}
+  },
+  "terms": {
+    "APPLe": {"th": "APPLe"},
+    "Arcanist": {"th": "อาร์แคนนิสต์"},
+    "Arcana": {"th": "อาร์แคนา"},
+    "Psychube": {"th": "ไซคิวบ์"},
+    "Afflatus": {"th": "แอฟแฟลตัส"},
+    "Mesmerist": {"th": "เมสเมอริสต์"},
+    "Eureka": {"th": "ยูเรกา"},
+    "Incantation": {"th": "คาถา"}
+  }
+}
