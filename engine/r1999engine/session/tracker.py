@@ -72,6 +72,7 @@ class TextTracker:
         if not keep_speaker:
             self.votes = Counter()
             self.known = set()
+            self.style.new_text()
         self.recent.append(read.text)
         self._track(read)
 

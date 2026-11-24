@@ -9,10 +9,20 @@ from .types import DialogRead
 NAME_ZONE_WIDTH = 0.45
 READ_X0 = 0.19   # where the usual reading area starts, left of it are portraits and icons
 EDGE_PX = 10
+DIALOG_LEFT = 0.2146   # where in-game dialog lines start, the main menu centers its lines
+DIALOG_TOLERANCE = 0.012
+CENTER_TOLERANCE = 0.02
 EDGE_INK = 40      # how much brighter than the line's background a pixel at the edge must be to count as ink
 EDGE_MIN_PIXELS = 6
 WIDE_MIN_SCORE = 0.3   # a long line is recognised with less confidence, it is checked against the first reading instead
 WIDE_SAME = 0.8
+
+
+def is_centered(left, right, cw):
+    """Dialog lines start at a fixed place, the lines of the main menu are centered on the screen."""
+    if abs(left - DIALOG_LEFT * cw) <= DIALOG_TOLERANCE * cw:
+        return False
+    return abs((left + right) / 2 - cw / 2) <= CENTER_TOLERANCE * cw
 
 
 class DialogReader:
@@ -77,7 +87,10 @@ class DialogReader:
         text_top = top_px + min(r.top for r in rows)
         read.top_y = text_top / ch
         style["text_ink_h"] = max(r.ink_h for r in rows) / ch
-        style["text_left"] = float((x0_px + min(r.left for r in rows)) / cw)
+        left, right = x0_px + min(r.left for r in rows), x0_px + max(r.x1 for r in rows)
+        style["text_left"] = float(left / cw)
+        style["text_align"] = "center" if is_centered(left, right, cw) else "left"
+        style["text_center"] = float((left + right) / 2 / cw)
         style["text_color"] = rows[0].color
         if len(rows) >= 2:
             tops = sorted(r.top for r in rows)

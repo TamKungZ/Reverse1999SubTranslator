@@ -4,6 +4,8 @@ DEFAULT_STYLE = {
     "text_ink_h": 33 / 1080,
     "name_cap": 31 / 1080,
     "text_left": 412 / 1920,
+    "text_align": "left",
+    "text_center": 0.5,
     "name_left": 426 / 1920,
     "name_to_text": 76 / 1080,
     "pitch": None,
@@ -13,6 +15,7 @@ DEFAULT_STYLE = {
 
 STYLE_WINDOW = 9
 MEDIAN_KEYS = ("name_cap", "name_to_text", "text_left", "name_left", "pitch")
+LAYOUT_KEYS = ("text_left", "name_left", "name_to_text")   # these belong to one subtitle, the next one may be laid out differently
 INK_HEIGHT_RANGE = (0.02, 0.05)
 
 
@@ -42,6 +45,10 @@ class StyleTracker:
                     self.values[key] = median(hist)
             else:
                 self.values[key] = value
+
+    def new_text(self):
+        for key in LAYOUT_KEYS:
+            self._history.pop(key, None)
 
     def snapshot(self):
         return dict(self.values)
