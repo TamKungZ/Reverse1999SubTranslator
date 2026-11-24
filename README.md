@@ -19,7 +19,7 @@ Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's
 
 1. Download `R1999Translator-Setup-<version>.exe` from [Releases](https://github.com/TamKungZ/Reverse1999SubTranslator/releases) and run it. It installs for the current user and needs no administrator rights.
 2. Set the game's text language to English and run the game in windowed or borderless mode.
-3. Start R1999 Translator. On the first start it downloads the translation model: NLLB-200 (about 620 MB) or, if you pick Argos in the menu, a 64 MB model that translates about ten times faster.
+3. Start R1999 Translator. On the first start it downloads the Argos model (about 64 MB), which translates about ten times faster than the other one. NLLB-200 (about 620 MB) keeps downloading in the background, and you are told when it is ready. Both are kept loaded, so the F9 menu switches between them at once. A message says that the program is running, and it stays in the system tray at the bottom right.
 
 Requires Windows 11 (64-bit). Windows N editions also need the Media Feature Pack from Microsoft.
 
@@ -30,8 +30,11 @@ Requires Windows 11 (64-bit). Windows N editions also need the Media Feature Pac
 | F7 | Translation on / off |
 | F8 | Sentence / word mode |
 | F9 | Settings (arrow keys, Enter, Esc) |
+| F10 | Save a screenshot with the translation to `Pictures\R1999Translator` |
 
-The translation is drawn over the game's subtitles in the same size, colour and alignment. The F9 menu changes the font, the size, the languages and more.
+The translation is drawn over the game's subtitles in the same size, colour and alignment. The F9 menu changes the font, the size, the languages and more. Messages about loading and downloading appear in the corner of the screen, with a sound that the menu can turn off.
+
+The overlay is hidden from screen capture on purpose, so the program does not read its own translation, which means other screenshot and recording tools do not show it. Use F10 to get a picture with the translation.
 
 ## Languages
 

@@ -7,7 +7,7 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `scripts`, `fonts`, `language_errors`, `translator`, `model_repo`, `config` |
+| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `scripts`, `fonts`, `language_errors`, `translator`, `background`, `model_repo`, `config` |
 | POST | `/frame` | Send one frame, receive the current view |
 | GET | `/view` | Current view without sending a frame |
 | GET / POST | `/config` | Read or update engine settings (JSON object) |
@@ -19,7 +19,7 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 `download` is `{state, done, total, file, error}` in bytes.
 `languages` maps a language code to its display name and `scripts` to its script (`Thai`, `Latn`, `Jpan`, ...).
 `fonts` maps a language code to the font families a UI should prefer for it, the first being the default.
-`language_errors` lists entries of the user's `languages.json` that were skipped. `translator` is the translator the current `target_lang` uses (`nllb`, or `argos` when chosen and the language has an Argos model) and `model_repo` its model, `argos:en-<code>` for Argos. Changing `target_lang` or `translator` to a model that is not on disk changes `state` to `model_missing`; call `/model/download` to fetch it.
+`language_errors` lists entries of the user's `languages.json` that were skipped. `translator` is the translator the current `target_lang` uses (`nllb`, or `argos` when chosen and the language has an Argos model) and `model_repo` its model, `argos:en-<code>` for Argos. Changing `target_lang` or `translator` to a model that is not on disk changes `state` to `model_missing`; call `/model/download` to fetch it. `background` is the state of the other translator, which the engine downloads and loads after the chosen one is ready: `translator`, `state` (the download state), `loaded`, `done` and `total` (bytes).
 
 ## POST /frame
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.1] - 2026-11-24
+
+### Added
+
+- A message at start says that the program is running and lives in the system tray. It can be turned off from the message itself. Starting a second copy now says that it is already running instead of doing nothing.
+- Messages in the corner of the screen, with a sound, for loading and downloading the translation model, errors and screenshots. The menu has a switch for the sounds.
+- F10 saves a screenshot of the game with the translation drawn on it. The overlay is hidden from screen capture, so other tools could not show it.
+
+### Changed
+
+- Argos is the default translator. Both translators are loaded at start, and the one that is not downloaded yet downloads in the background, so switching is instant.
+
+### Fixed
+
+- The translation was sometimes drawn larger than the game's subtitles. One bad measurement of the text height stayed for the rest of the session, it is now smoothed like the other measurements.
+
 ## [1.1.0] - 2026-11-24
 
 ### Added
