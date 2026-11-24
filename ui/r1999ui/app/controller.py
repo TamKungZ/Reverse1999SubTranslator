@@ -19,6 +19,7 @@ BOOT_ATTEMPTS = 240
 BOOT_POLL = 0.5
 GAME_POLL_MS = 200
 AUTO_EXIT_AFTER = 10
+ENGINE_CHOICES = {"target_lang", "translator"}
 
 
 class Bridge(QObject):
@@ -41,7 +42,7 @@ class Controller:
         self.region = (0.08, 0.78, 0.90, 1.0)
         self.is_ready = False
         self.frame_loop = None
-        self.previous_lang = None
+        self.previous = None
         self.menu = None
         self.tray = None
         self._stop = threading.Event()
@@ -114,8 +115,8 @@ class Controller:
             self.mark_ready()
         elif not self.is_ready:
             self.quit()
-        elif self.previous_lang and self.previous_lang != self.engine_cfg.get("target_lang"):
-            self.set_engine("target_lang", self.previous_lang)
+        elif self.previous and self.previous[1] != self.engine_cfg.get(self.previous[0]):
+            self.set_engine(*self.previous)
 
     def mark_ready(self):
         self.is_ready = True
@@ -172,8 +173,8 @@ class Controller:
                 self.loc.set(value)
                 self.tray.refresh()
         else:
-            if key == "target_lang":
-                self.previous_lang = self.engine_cfg.get("target_lang")
+            if key in ENGINE_CHOICES:
+                self.previous = (key, self.engine_cfg.get(key))
             self.set_engine(key, value)
         if key in ("locale", "target_lang"):
             self.apply_font_default()
@@ -204,7 +205,7 @@ class Controller:
             self.client.set_config(values)
         except OSError:
             return
-        if "target_lang" in values:
+        if ENGINE_CHOICES & set(values):
             self.bridge.ready.emit(self.wait_for_engine())
 
     def quit(self):

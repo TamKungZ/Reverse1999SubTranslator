@@ -4,6 +4,7 @@ ITEMS = [
     ("eng", "mode", "choice", ("sentence", "word")),
     ("eng", "timing", "choice", ("wait", "live")),
     ("eng", "target_lang", "choice"),
+    ("eng", "translator", "choice", ("nllb", "argos")),
     ("ui", "font_family", "choice"),
     ("ui", "size_adjust", "number", 0.6, 1.8, 0.05, "pct"),
     ("ui", "match_original", "toggle"),
