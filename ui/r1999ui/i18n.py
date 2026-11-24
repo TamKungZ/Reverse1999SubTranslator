@@ -1,21 +1,13 @@
-import json
 from pathlib import Path
 
-from .settings import data_dir
+from .storage import data_dir, read_json
 
 BUILTIN = Path(__file__).parent / "locales"
 
 
-def _read(path):
-    try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-
-
 class Locale:
     def __init__(self, code="en"):
-        self.fallback = _read(BUILTIN / "en.json")
+        self.fallback = read_json(BUILTIN / "en.json", {})
         self.data = {}
         self.code = "en"
         self.set(code)
@@ -30,7 +22,7 @@ class Locale:
             if not folder.is_dir():
                 continue
             for path in sorted(folder.glob("*.json")):
-                name = _read(path).get("_name")
+                name = (read_json(path, {}) or {}).get("_name")
                 if name:
                     found[path.stem] = name
         return found
@@ -38,12 +30,12 @@ class Locale:
     def set(self, code):
         data = {}
         for folder in self.folders():
-            data.update(_read(folder / (code + ".json")))
+            data.update(read_json(folder / (code + ".json"), {}) or {})
         if not data:
             code, data = "en", {}
         self.code, self.data = code, data
 
-    def t(self, key, **values):
+    def t(self, key, /, **values):
         text = self.data.get(key) or self.fallback.get(key) or key
         try:
             return text.format(**values) if values else text
