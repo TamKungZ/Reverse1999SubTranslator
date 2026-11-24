@@ -16,6 +16,12 @@ The same line of the main menu, translated by each translator:
 | :---: | :---: |
 | ![Argos](docs/images/argos_menu.png) | ![NLLB-200](docs/images/nllb_menu.png) |
 
+The same dialog in the game:
+
+| Argos (default, faster) | NLLB-200 (larger) |
+| :---: | :---: |
+| ![Argos](docs/images/argos_ingame.png) | ![NLLB-200](docs/images/nllb_ingame.png) |
+
 ## Install
 
 1. Download `R1999Translator-Setup-<version>.exe` from [Releases](https://github.com/TamKungZ/Reverse1999SubTranslator/releases) and run it. It installs for the current user and needs no administrator rights.
