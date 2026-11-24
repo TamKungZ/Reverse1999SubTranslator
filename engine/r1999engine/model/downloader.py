@@ -2,9 +2,16 @@ import json
 import threading
 import urllib.request
 
+from .. import __version__
 from .paths import REQUIRED, is_ready, model_dir
 
 CHUNK = 1 << 20
+USER_AGENT = "R1999Translator/%s (+https://github.com/TamKungZ/Reverse1999SubTranslator)" % __version__
+
+
+def request(url, headers=None):
+    """A download request that says who is asking, some model hosts refuse the default Python agent."""
+    return urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
 
 
 class Downloader:
@@ -31,22 +38,15 @@ class Downloader:
             return
         self._cancel.clear()
         self.state, self.error, self.done, self.total = "downloading", "", 0, 0
-        self._thread = threading.Thread(target=self._run, args=(repo, on_done), daemon=True)
+        self._thread = threading.Thread(target=self._guarded, args=(repo, on_done), daemon=True)
         self._thread.start()
 
     def cancel(self):
         self._cancel.set()
 
-    def _run(self, repo, on_done):
+    def _guarded(self, target, on_done):
         try:
-            dest = model_dir(repo)
-            dest.mkdir(parents=True, exist_ok=True)
-            wanted = self._wanted_files(repo)
-            self.total = sum(int(s.get("size") or 0) for s in wanted)
-            for sib in wanted:
-                self._fetch(repo, sib["rfilename"], dest)
-            if not is_ready(dest):
-                raise RuntimeError("model files are incomplete")
+            self._run(target)
             self.state = "done"
             if on_done:
                 on_done()
@@ -54,10 +54,20 @@ class Downloader:
             self.state = "cancelled" if self._cancel.is_set() else "error"
             self.error = str(exc)
 
+    def _run(self, repo):
+        dest = model_dir(repo)
+        dest.mkdir(parents=True, exist_ok=True)
+        wanted = self._wanted_files(repo)
+        self.total = sum(int(s.get("size") or 0) for s in wanted)
+        for sib in wanted:
+            self._fetch(repo, sib["rfilename"], dest)
+        if not is_ready(dest):
+            raise RuntimeError("model files are incomplete")
+
     @staticmethod
     def _wanted_files(repo):
         api = "https://huggingface.co/api/models/%s?blobs=true" % repo
-        with urllib.request.urlopen(api, timeout=30) as resp:
+        with urllib.request.urlopen(request(api), timeout=30) as resp:
             info = json.load(resp)
         return [
             s
@@ -66,17 +76,20 @@ class Downloader:
         ]
 
     def _fetch(self, repo, name, dest):
-        target = dest / name
-        part = dest / (name + ".part")
         self.file = name
-        url = "https://huggingface.co/%s/resolve/main/%s" % (repo, name)
+        part = dest / (name + ".part")
+        self._stream("https://huggingface.co/%s/resolve/main/%s" % (repo, name), part)
+        part.replace(dest / name)
+
+    def _stream(self, url, part):
+        """Downloads a file to `part`, resuming what an earlier try left there."""
         start = part.stat().st_size if part.exists() else 0
-        req = urllib.request.Request(url)
-        if start:
-            req.add_header("Range", "bytes=%d-" % start)
+        req = request(url, {"Range": "bytes=%d-" % start} if start else None)
         with urllib.request.urlopen(req, timeout=60) as resp:
             if start and resp.status != 206:
                 start = 0
+            if not self.total and resp.headers.get("Content-Length"):
+                self.total = start + int(resp.headers["Content-Length"])
             mode = "ab" if start else "wb"
             self.done += start
             with open(part, mode) as fh:
@@ -88,4 +101,3 @@ class Downloader:
                         raise RuntimeError("cancelled")
                     fh.write(chunk)
                     self.done += len(chunk)
-        part.replace(target)
