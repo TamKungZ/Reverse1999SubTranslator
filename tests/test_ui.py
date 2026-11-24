@@ -206,6 +206,30 @@ def test_screenshot_has_the_translation_drawn_on_the_game_picture():
     assert take(type("Empty", (), {"grab": lambda self, game, region: None})(), winutil.GameState(1, 0, 0, 10, 10, True, True), ov.state, folder) is None
 
 
+def test_the_menu_keeps_changing_the_translator_after_the_engine_answers():
+    from r1999ui.app.controller import Controller
+
+    class Client:
+        def set_config(self, values):
+            return values
+
+    controller = Controller(app, UiSettings())
+    controller.client = Client()
+    config = {"translator": "argos", "target_lang": "th", "mode": "sentence", "region": [0.08, 0.78, 0.9, 1.0]}
+    info = {"state": "ready", "config": config, "translator": "argos", "languages": {"th": "Thai"}, "scripts": {"th": "Thai"}, "fonts": {}}
+    controller.on_ready(dict(info, config=dict(config)))
+    controller.menu = controller.new_menu()
+    controller.menu.index = [i["key"] for i in controller.menu.items].index("translator")
+    seen = []
+    for expected in ("nllb", "argos", "nllb", "argos"):
+        controller.menu.handle("right")
+        seen.append(controller.menu.value(controller.menu.items[controller.menu.index]))
+        controller.on_ready(dict(info, config=dict(config), translator=expected))      # the engine answers after every change
+    assert seen == ["nllb", "argos", "nllb", "argos"] and controller.engine_cfg["translator"] == "argos"
+    controller.tracker = None
+    controller._stop.set()
+
+
 def test_overlay_animation_runs():
     ui = UiSettings()
     ov = OverlayWindow(ui)

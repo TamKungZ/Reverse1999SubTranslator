@@ -132,7 +132,8 @@ class Controller:
             self.overlay.toast(self.loc.t("toast.engine_failed"), 5000)
             self.notify(self.loc.t("toast.engine_failed"), warning=True)
             return
-        self.engine_cfg = info["config"]
+        if not self.engine_cfg:
+            self.engine_cfg.update(info["config"])
         self.scripts = info.get("scripts", {})
         self.language_fonts = info.get("fonts", {})
         self.languages = info["languages"]
