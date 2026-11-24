@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0] - 2026-11-24
+
+### Added
+
+- A second translator, Argos, chosen in the menu. It translates a sentence in about 60 ms instead of 700 ms and downloads 64 MB instead of 620 MB. NLLB-200 stays the default. Languages without an Argos model keep using NLLB.
+- The `argos` field in `languages.json` and the `translator` setting (`nllb`|`argos`).
+
+### Changed
+
+- While new text is still appearing the picture is read every 0.25 s, and changes to the right of or below the text already read are noticed. The last words of a typed line no longer go untranslated.
+- Download requests identify the program, because some model hosts refuse the default Python agent.
+
 ## [1.0.1] - 2026-11-24
 
 ### Removed

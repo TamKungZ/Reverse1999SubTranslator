@@ -19,7 +19,7 @@ Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's
 
 1. Download `R1999Translator-Setup-<version>.exe` from [Releases](https://github.com/TamKungZ/Reverse1999SubTranslator/releases) and run it. It installs for the current user and needs no administrator rights.
 2. Set the game's text language to English and run the game in windowed or borderless mode.
-3. Start R1999 Translator. On the first start it downloads the translation model (about 620 MB).
+3. Start R1999 Translator. On the first start it downloads the translation model: NLLB-200 (about 620 MB) or, if you pick Argos in the menu, a 64 MB model that translates about ten times faster.
 
 Requires Windows 11 (64-bit). Windows N editions also need the Media Feature Pack from Microsoft.
 
@@ -57,4 +57,4 @@ Another interface can use the engine through its local HTTP protocol, see [docs/
 
 ## License
 
-Source code: Mozilla Public License 2.0, see [LICENSE](LICENSE). The translation model is NLLB-200 under CC-BY-NC-4.0, which does not allow commercial use. Releases bundle the Kanit font under the SIL Open Font License 1.1.
+Source code: Mozilla Public License 2.0, see [LICENSE](LICENSE). The translation model is NLLB-200 under CC-BY-NC-4.0, which does not allow commercial use. The Argos models are OPUS-MT models packaged by Argos Open Tech under CC-BY-4.0. Releases bundle the Kanit font under the SIL Open Font License 1.1.
