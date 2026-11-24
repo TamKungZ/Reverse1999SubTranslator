@@ -168,6 +168,24 @@ def test_the_argos_translator_is_chosen_per_language_and_falls_back_to_nllb():
         host_module.is_argos_ready, host_module.ArgosEngine = saved
 
 
+def test_names_and_words_are_remembered_per_translator():
+    from r1999engine.translate import TextTranslator
+
+    class Engine:
+        def __init__(self, tag):
+            self.tag = tag
+
+        def translate(self, texts, lang):
+            return [self.tag + ":" + t for t in texts]
+
+    shared = Glossary(Path(tempfile.mkdtemp()) / "glossary.json")
+    first, second = TextTranslator(Engine("a"), shared, persist=False), TextTranslator(Engine("b"), shared, persist=False)
+    first.names_cache = second.names_cache = first.words_cache = second.words_cache = type("Shared", (), {"data": {}, "get": lambda self, k: self.data.get(k), "put": lambda self, k, v: self.data.__setitem__(k, v), "flush": lambda self: None})()
+    assert first.meanings(["glass"], "th") == {"glass": "a:glass"}
+    assert second.meanings(["glass"], "th") == {"glass": "b:glass"}      # not the answer of the other translator
+    assert first.meanings(["glass"], "th") == {"glass": "a:glass"}
+
+
 def test_both_translators_are_made_ready_so_that_switching_is_instant():
     import r1999engine.server.host as host_module
 

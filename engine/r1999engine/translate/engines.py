@@ -11,6 +11,8 @@ def default_threads():
 
 
 class NLLBEngine:
+    tag = "nllb"
+
     def __init__(self, model_dir, threads=0, device="cpu", beam_size=2):
         self.beam_size = beam_size
         import ctranslate2
@@ -43,6 +45,8 @@ class NLLBEngine:
 
 
 class ArgosEngine:
+    tag = "argos"
+
     """Argos Translate models (OPUS-MT, one per language pair) run with CTranslate2 and SentencePiece, without the Argos library."""
 
     def __init__(self, directory, threads=0, beam_size=2):

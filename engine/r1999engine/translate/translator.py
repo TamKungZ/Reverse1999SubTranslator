@@ -20,6 +20,7 @@ class TextTranslator:
         self.words_cache = Cache(data_dir() / "word_cache.json" if persist else None)
         self.names_cache = Cache(data_dir() / "name_cache.json" if persist else None)
         self.sentence_cache = {}
+        self.tag = getattr(engine, "tag", "")
 
     def flush(self):
         self.words_cache.flush()
@@ -32,7 +33,7 @@ class TextTranslator:
     def transliterate(self, name, lang):
         if not LANGUAGES[lang]["native_names"]:
             return name
-        key = "%s|%s" % (lang, name)
+        key = "%s|%s|%s" % (self.tag, lang, name)
         cached = self.names_cache.get(key)
         if cached is not None:
             return cached
@@ -75,7 +76,7 @@ class TextTranslator:
         return segments
 
     def meanings(self, words, lang):
-        keys = {w: "%s|%s" % (lang, w) for w in words}
+        keys = {w: "%s|%s|%s" % (self.tag, lang, w) for w in words}
         missing = [w for w in words if self.words_cache.get(keys[w]) is None]
         if missing:
             for w, out in zip(missing, self._translate(missing, lang)):
