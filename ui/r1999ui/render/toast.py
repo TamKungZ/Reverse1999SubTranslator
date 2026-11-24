@@ -7,7 +7,7 @@ from .theme import HAIRLINE, SURFACE, TEXT, with_alpha
 
 
 def draw_toast(p, W, H, s, st):
-    font = make_font(21 * s, QFont.Weight.Medium)
+    font = make_font(21 * s, QFont.Weight.Normal)
     w, h = QFontMetricsF(font).horizontalAdvance(st.toast) + 44 * s, 42 * s
     rect = QRectF((W - w) / 2, 0.07 * H, w, h)
     p.save()

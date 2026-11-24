@@ -25,7 +25,7 @@ def _hairline(p, rect, y, s):
 
 
 def _draw_header(p, rect, s, title):
-    p.setFont(make_font(24 * s, QFont.Weight.DemiBold))
+    p.setFont(make_font(24 * s, QFont.Weight.Normal))
     p.setPen(TEXT)
     p.drawText(QRectF(rect.left() + PAD * s, rect.top() + 14 * s, rect.width() - 2 * PAD * s, 40 * s), VCENTER, title)
     _hairline(p, rect, rect.top() + (HEAD_H - 4) * s, s)
@@ -69,7 +69,7 @@ def _draw_row(p, st, i, row, r, near, s, fonts):
 
 def _draw_footer(p, st, rect, y, s):
     _hairline(p, rect, y + 6 * s, s)
-    p.setFont(make_font(16 * s, QFont.Weight.Normal))
+    p.setFont(make_font(16 * s, QFont.Weight.Light))
     p.setPen(DIM)
     p.drawText(QRectF(rect.left(), y + 12 * s, rect.width(), 26 * s), Qt.AlignmentFlag.AlignCenter, st.t("menu.hint"))
     hk = st.hotkeys
@@ -91,7 +91,7 @@ def draw_menu(p, W, H, s, st):
     top = rect.top() + HEAD_H * s
     sel = min(max(st.sel_pos, 0.0), max(0, len(rows) - 1))
     _draw_selection(p, rect, top, sel, s)
-    fonts = make_font(20 * s, QFont.Weight.Normal), make_font(20 * s, QFont.Weight.Medium)
+    fonts = make_font(20 * s, QFont.Weight.Light), make_font(20 * s, QFont.Weight.Normal)
     for i, row in enumerate(rows):
         r = QRectF(rect.left() + 16 * s, top + i * ROW_H * s + 2 * s, width - 32 * s, (ROW_H - 4) * s)
         _draw_row(p, st, i, row, r, max(0.0, 1.0 - abs(i - sel)), s, fonts)

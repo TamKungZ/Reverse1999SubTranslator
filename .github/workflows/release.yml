@@ -53,6 +53,7 @@ jobs:
         run: |
           $commit = "130fcfb0ff422fec96b335616b2ca99f91914792"
           $fonts = @{
+            "Kanit-Light.ttf"    = "7c04b0be6011782fcc4c032f4033ef6f6ba1fef99b135ba1ee68b800c53017ec"
             "Kanit-Regular.ttf"  = "27170c049660b2f962d3ed28441fd20f4c743503ca031fec9c2b4542d6c52736"
             "Kanit-Medium.ttf"   = "50a237034244026a7c63fe55e24e0b4298babe363cde043e032075b764c545a2"
             "Kanit-SemiBold.ttf" = "67e64baf1a7e6e076435518ff0e6bf25c4d74b98143cd1a2688db906c0abce11"
