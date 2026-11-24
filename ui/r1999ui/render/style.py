@@ -20,6 +20,8 @@ def resolve_style(view, ui, W, H, s):
             "name_left": style["name_left"] * W,
             "name_to_text": style["name_to_text"] * H,
             "pitch": (style.get("pitch") or 0.0) * H,
+            "align": style.get("text_align", "left"),
+            "center": style.get("text_center", 0.5) * W,
         }
     color = QColor(ui.get("text_color", "#f4eee2"))
     px = 34 * s * adjust
@@ -27,4 +29,5 @@ def resolve_style(view, ui, W, H, s):
     return {
         "family": family, "text_px": px, "name_px": px * 1.2, "text_color": color, "name_color": color,
         "text_left": left, "name_left": left, "name_to_text": 76 * s, "pitch": 0.0,
+        "align": "left", "center": 0.5 * W,
     }

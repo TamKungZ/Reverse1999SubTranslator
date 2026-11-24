@@ -22,7 +22,14 @@ def draw_translation(p, W, H, s, st):
     highlight = ui.get("highlight_names", False)
     shadow = ui.get("text_shadow", False)
     max_lines = ui.get("max_lines", 3)
-    width = max(200.0, ui["panel_x"][1] * W - style["text_left"])
+    centered = style["align"] == "center"
+    if centered:
+        width = max(200.0, (ui["panel_x"][1] - ui["panel_x"][0]) * W)
+        left = style["center"] - width / 2
+    else:
+        width = max(200.0, ui["panel_x"][1] * W - style["text_left"])
+        left = style["text_left"]
+    align = "center" if centered else "left"
     words = view["kind"] == "words"
     if words:
         font = make_font(style["text_px"], family=family)
@@ -30,7 +37,7 @@ def draw_translation(p, W, H, s, st):
         count = len(rows)
     else:
         font, text, ranges, count, pitch = fit_text(
-            view["segments"], style["text_px"], width, max_lines, family, highlight, style["pitch"]
+            view["segments"], style["text_px"], width, max_lines, family, highlight, style["pitch"], align
         )
     speaker = view.get("speaker") if ui.get("show_speaker", True) else None
     if ui.get("line_space", "grow") == "reserve":
@@ -48,7 +55,7 @@ def draw_translation(p, W, H, s, st):
         draw_word_rows(p, rows, font, style, text_top, pitch, highlight, shadow, s)
     else:
         y = text_top + ink_ascent(font, "Hgdp") - QFontMetricsF(font).ascent()
-        draw_text(p, (text, ranges, font, width, pitch), style["text_left"], y, style["text_color"], shadow, s)
+        draw_text(p, (text, ranges, font, width, pitch, align), left, y, style["text_color"], shadow, s)
     if speaker:
         name_font = make_font(style["name_px"], family=family)
         ny = block_top + ink_ascent(name_font, "H") - QFontMetricsF(name_font).ascent()
