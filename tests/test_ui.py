@@ -183,6 +183,29 @@ def test_overlay_paint_and_visibility():
     assert ov.state.menu_rows is None and not ov.isVisible()
 
 
+def test_screenshot_has_the_translation_drawn_on_the_game_picture():
+    from r1999ui.app.screenshot import take
+
+    class Grabber:
+        def grab(self, game, region):
+            assert region == (0.0, 0.0, 1.0, 1.0)
+            return np.full((540, 960, 3), (30, 40, 50), np.uint8)
+
+    ui = UiSettings()
+    ui.data["animations"] = False
+    ov = OverlayWindow(ui)
+    ov.state.view = {"seq": 1, "kind": "sentence", "pending": False, "speaker": {"display": "เรกูลัส"},
+                     "segments": [{"t": "ไม่ ไม่นะ อย่าไปสิ", "k": None}], "chips": [], "anchor_top": 0.81, "style": None}
+    ov.state.reveal, ov.state.toast, ov.state.toast_alpha = 1.0, "hidden", 1.0
+    folder = Path(tempfile.mkdtemp())
+    path = take(Grabber(), winutil.GameState(1, 0, 0, 960, 540, True, True), ov.state, folder)
+    from PySide6.QtGui import QImage
+    image = QImage(str(path))
+    assert path.parent == folder and image.width() == 960 and image.height() == 540
+    assert any(image.pixelColor(x, y).getRgb()[:3] != (50, 40, 30) and image.pixelColor(x, y).red() != 30 for x in range(200, 460, 4) for y in range(380, 440, 2))
+    assert take(type("Empty", (), {"grab": lambda self, game, region: None})(), winutil.GameState(1, 0, 0, 10, 10, True, True), ov.state, folder) is None
+
+
 def test_overlay_animation_runs():
     ui = UiSettings()
     ov = OverlayWindow(ui)

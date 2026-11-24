@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 os.environ["APPDATA"] = tempfile.mkdtemp()
@@ -116,6 +117,7 @@ def test_switching_to_a_language_with_its_own_model():
     original = (host_module.is_ready, host_module.NLLBEngine)
     try:
         host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
+        host.cfg.update({"translator": "nllb"}, save=False)
         host.session.reader = object()
         host_module.is_ready = lambda directory: "indonesian" not in str(directory)
         host_module.NLLBEngine = Stub
@@ -146,9 +148,11 @@ def test_the_argos_translator_is_chosen_per_language_and_falls_back_to_nllb():
     try:
         host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
         host.session.reader = object()
-        assert host.need()[0] == "nllb" and host.info()["translator"] == "nllb"
-        host.update_config({"translator": "argos"})
         assert host.need() == ("argos", "th") and host.repo() == "argos:en-th" and host.info()["translator"] == "argos"
+        host.update_config({"translator": "nllb"})
+        assert host.need()[0] == "nllb" and host.other() == ("argos", "th") and host.info()["translator"] == "nllb"
+        host.update_config({"translator": "argos"})
+        assert host.other() == ("nllb", host.cfg["model_repo"])
         assert host.state == "model_missing" and host.session.translator is None
         host_module.is_argos_ready = lambda directory: True
         host_module.ArgosEngine = Stub
@@ -162,6 +166,47 @@ def test_the_argos_translator_is_chosen_per_language_and_falls_back_to_nllb():
     finally:
         langs.pop("xx", None)
         host_module.is_argos_ready, host_module.ArgosEngine = saved
+
+
+def test_both_translators_are_made_ready_so_that_switching_is_instant():
+    import r1999engine.server.host as host_module
+
+    class Stub:
+        def __init__(self, *args):
+            self.args = args
+
+    class Recorder:
+        def __init__(self):
+            self.started = []
+
+        def start(self, key, on_done=None):
+            self.started.append(key)
+
+        def progress(self):
+            return {"state": "downloading", "done": 1, "total": 2, "file": "", "error": ""}
+
+    saved = (host_module.is_argos_ready, host_module.is_ready, host_module.ArgosEngine, host_module.NLLBEngine)
+    try:
+        host = host_module.Host(config_path=Path(tempfile.mkdtemp()) / "config.json")
+        host.session.reader = object()
+        host.preload = True
+        host_module.ArgosEngine, host_module.NLLBEngine = Stub, Stub
+        host_module.is_argos_ready, host_module.is_ready = (lambda directory: True), (lambda directory: False)
+        recorder = host.downloaders["nllb"] = Recorder()
+        host._load_model(host.need())
+        assert host.state == "ready" and recorder.started == [host.cfg["model_repo"]]        # the missing one is downloaded in the background
+        assert host.info()["background"] == {"translator": "nllb", "state": "downloading", "loaded": False, "done": 1, "total": 2}
+        host_module.is_ready = lambda directory: True
+        host._preload()
+        for _ in range(100):
+            if ("nllb", host.cfg["model_repo"]) in host._engines:
+                break
+            time.sleep(0.02)
+        assert ("nllb", host.cfg["model_repo"]) in host._engines and host.info()["background"]["loaded"]
+        host.update_config({"translator": "nllb"})
+        assert host.state == "ready" and host.session.translator.engine is host._engines[("nllb", host.cfg["model_repo"])]
+    finally:
+        host_module.is_argos_ready, host_module.is_ready, host_module.ArgosEngine, host_module.NLLBEngine = saved
 
 
 def test_argos_models_are_found_unpacked_and_cleaned():
@@ -352,6 +397,12 @@ def test_centered_menu_lines_and_left_aligned_dialog_lines_are_told_apart():
         assert style["text_align"] == expected, (expected, style)
         if expected == "center":
             assert abs(style["text_center"] - 0.5) < 0.02
+    tracker = StyleTracker()
+    for height in (0.0305, 0.0306, 0.0304, 0.0450, 0.0305):             # one bad measurement must not make the text bigger for good
+        tracker.merge({"text_ink_h": height})
+    assert abs(tracker.values["text_ink_h"] - 0.0305) < 1e-9
+    tracker.merge({"text_ink_h": 0.2})
+    assert abs(tracker.values["text_ink_h"] - 0.0305) < 1e-9
     tracker = StyleTracker()
     for _ in range(5):
         tracker.merge({"text_left": 0.2146})
