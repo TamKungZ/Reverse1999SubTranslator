@@ -2,6 +2,12 @@
 
 Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's English subtitles from the screen and draws a translation over them. After the translation model has been downloaded, nothing leaves the computer.
 
+## What to expect
+
+- The translation is made in real time while the game runs, so it appears a moment after the subtitle, not together with it.
+- It is machine translation and is not always accurate. It helps to follow the overall context of a scene.
+- Understanding English and listening to the voice acting are still needed. The translation only eases the load of the difficult words the game uses, more or less.
+
 ## Screenshots
 
 <!--
