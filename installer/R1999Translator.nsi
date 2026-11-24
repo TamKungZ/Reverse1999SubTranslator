@@ -35,8 +35,12 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 BrandingText "${PUBLISHER}"
 
-!define MUI_ICON "..\ui\r1999ui\assets\icon.ico"
-!define MUI_UNICON "..\ui\r1999ui\assets\icon.ico"
+!define MUI_ICON "hat.ico"
+!define MUI_UNICON "hat.ico"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_RIGHT
+!define MUI_HEADERIMAGE_BITMAP "images\header.bmp"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "images\sidebar.bmp"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE}"
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirLeave
