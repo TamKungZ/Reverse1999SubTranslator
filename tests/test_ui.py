@@ -200,7 +200,7 @@ def test_end_to_end_with_engine():
             raise AssertionError("engine not ready")
         img = synthetic_frame()
         h, w = img.shape[:2]
-        region = (0.19, 0.78, 0.90, 1.0)
+        region = (0.08, 0.78, 0.90, 1.0)
         crop = img[int(region[1] * h):, int(region[0] * w):int(region[2] * w)].copy()
         view = None
         for _ in range(12):

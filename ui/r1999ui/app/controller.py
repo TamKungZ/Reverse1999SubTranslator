@@ -38,7 +38,7 @@ class Controller:
         self.languages = {}
         self.scripts = {}
         self.language_fonts = {}
-        self.region = (0.19, 0.78, 0.90, 1.0)
+        self.region = (0.08, 0.78, 0.90, 1.0)
         self.is_ready = False
         self.frame_loop = None
         self.previous_lang = None

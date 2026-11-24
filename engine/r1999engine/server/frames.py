@@ -3,7 +3,7 @@ import numpy as np
 
 from ..ocr import Frame
 
-DEFAULT_REGION = "0.19,0.78,0.90,1.0"
+DEFAULT_REGION = "0.08,0.78,0.90,1.0"
 
 
 def decode_frame(body, headers):
