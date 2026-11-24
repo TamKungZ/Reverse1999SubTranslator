@@ -1,12 +1,18 @@
 import numpy as np
 
-from ..textutil import clean_ocr
+from ..textutil import clean_ocr, norm, similar
 from .name import NameReader
 from .rows import RowReader
 from .text import read_text
 from .types import DialogRead
 
 NAME_ZONE_WIDTH = 0.45
+READ_X0 = 0.19   # where the usual reading area starts, left of it are portraits and icons
+EDGE_PX = 10
+EDGE_INK = 40      # how much brighter than the line's background a pixel at the edge must be to count as ink
+EDGE_MIN_PIXELS = 6
+WIDE_MIN_SCORE = 0.3   # a long line is recognised with less confidence, it is checked against the first reading instead
+WIDE_SAME = 0.8
 
 
 class DialogReader:
@@ -24,15 +30,45 @@ class DialogReader:
         rh, rw = img.shape[:2]
         nb0 = int(max(0, self.name_band[0] * ch - y0_px))
         nb1 = int(min(rh, self.name_band[1] * ch - y0_px))
+        start = max(0, int((READ_X0 - frame.region[0]) * cw))
         read = DialogRead(style={})
-        text_rows = read_text(self.rows, img[nb1:, :, :]) if nb1 < rh else []
+        text_rows, offset = self._text_rows(img, nb1, start) if nb1 < rh else ([], 0)
         if not text_rows:
             return read
-        text_top = self._fill_text(read, text_rows, x0_px, y0_px + nb1, ch, cw)
+        text_top = self._fill_text(read, text_rows, x0_px + offset, y0_px + nb1, ch, cw)
+        read.box = (
+            offset + min(r.x0 for r in text_rows), nb1 + min(r.y0 for r in text_rows),
+            offset + max(r.x1 for r in text_rows), nb1 + max(r.y1 for r in text_rows),
+        )
         if nb1 > nb0:
-            zone = img[nb0:nb1, : int(rw * NAME_ZONE_WIDTH), :]
-            self._fill_name(read, self.names.read(zone, ch), x0_px, y0_px + nb0, text_top, ch, cw)
+            zone = img[nb0:nb1, start : start + int((rw - start) * NAME_ZONE_WIDTH), :]
+            self._fill_name(read, self.names.read(zone, ch), x0_px + start, y0_px + nb0, text_top, ch, cw)
         return read
+
+    def _text_rows(self, img, nb1, start):
+        """Reads the usual area, and the whole picture only when a line runs past its left edge (centered lines)."""
+        zone = img[nb1:, start:, :]
+        rows = read_text(self.rows, zone)
+        if rows and start > 0 and self._runs_past_left_edge(zone, rows):
+            wide = read_text(self.rows, img[nb1:, :, :], WIDE_MIN_SCORE)
+            if wide and self._extends(rows, wide):
+                return wide, 0
+        return rows, start
+
+    @staticmethod
+    def _extends(rows, wide):
+        """The wide reading is the first one with more words, not something else that happened to be in the picture."""
+        first, second = (norm(" ".join(r.text for r in group)) for group in (rows, wide))
+        return len(second) >= len(first) and similar(first, second) >= WIDE_SAME
+
+    @staticmethod
+    def _runs_past_left_edge(zone, rows):
+        """A line cut at the left edge leaves ink there, even a faint one while the text is fading in."""
+        if min(r.left for r in rows) <= EDGE_PX:
+            return True
+        top, bottom = min(r.y0 for r in rows), max(r.y1 for r in rows)
+        lum = zone[top:bottom].mean(axis=2)
+        return int((lum[:, :EDGE_PX] > np.median(lum) + EDGE_INK).sum()) >= EDGE_MIN_PIXELS
 
     @staticmethod
     def _fill_text(read, rows, x0_px, top_px, ch, cw):

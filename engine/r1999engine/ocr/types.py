@@ -19,3 +19,4 @@ class DialogRead:
     top_y: float = 0.0
     name_ink: bool = False
     style: dict = None
+    box: tuple = None

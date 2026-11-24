@@ -19,7 +19,10 @@ class TextRow(NamedTuple):
     color: str
 
 
-def read_text(rows, zone):
+MIN_SCORE = 0.5
+
+
+def read_text(rows, zone, min_score=MIN_SCORE):
     lum = zone.mean(axis=2)
     peak = float(np.percentile(lum, 99.5))
     if peak < 90:
@@ -32,7 +35,7 @@ def read_text(rows, zone):
     x0, x1 = max(0, xs.min() - 8), min(zone.shape[1], xs.max() + 9)
     out = []
     for t, s, a, b, c, d in rows.rows_by_line(zone[y0:y1, x0:x1], mask[y0:y1, x0:x1]):
-        if s < 0.5 or not re.search(r"[A-Za-z]", t):
+        if s < min_score or not re.search(r"[A-Za-z]", t):
             continue
         ax, ay, bx, by = x0 + a, y0 + b, x0 + c, y0 + d
         sub = zone[ay:by, ax:bx]
