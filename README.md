@@ -1,12 +1,23 @@
 # R1999 Translator
 
-Offline overlay translator for the Reverse: 1999 PC client. The `engine` (Python, OCR and translation, no UI)
-and the `ui` (overlay, hotkeys, settings) are separate processes; see `docs/PROTOCOL.md` to write another UI.
+Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's English subtitles from the screen and draws a translation over them. After the translation model has been downloaded, nothing leaves the computer.
 
-Output: `dist\R1999Translator\R1999Translator.exe`. On first run it downloads the translation model (about 620 MB,
-CC-BY-NC-4.0) to `%APPDATA%\R1999Translator\engine\models`. Run the game in windowed or borderless mode.
+## Screenshots
 
-## Hotkeys
+<!--
+![Dialog](docs/images/dialog.png)
+![Main menu](docs/images/main-menu.png)
+-->
+
+## Install
+
+1. Download `R1999Translator-Setup-<version>.exe` from [Releases](https://github.com/TamKungZ/Reverse1999SubTranslator/releases) and run it. It installs for the current user and needs no administrator rights.
+2. Set the game's text language to English and run the game in windowed or borderless mode.
+3. Start R1999 Translator. On the first start it downloads the translation model (about 620 MB).
+
+Requires Windows 11 (64-bit). Windows N editions also need the Media Feature Pack from Microsoft.
+
+## Use
 
 | Key | Action |
 | --- | --- |
@@ -14,13 +25,30 @@ CC-BY-NC-4.0) to `%APPDATA%\R1999Translator\engine\models`. Run the game in wind
 | F8 | Sentence / word mode |
 | F9 | Settings (arrow keys, Enter, Esc) |
 
-The translation is drawn as plain text, without a background, in the size, colour and position measured from the
-game's own subtitles. Settings (font from the installed fonts, size adjustment, matching the original style,
-interface language, and more) are in the F9 menu and saved in `%APPDATA%\R1999Translator`.
+The translation is drawn over the game's subtitles in the same size, colour and alignment. The F9 menu changes the font, the size, the languages and more.
 
-Interface language: add `<code>.json` to `%APPDATA%\R1999Translator\locales` (copy `ui\r1999ui\locales\en.json`,
-set `_name`); it then appears in the menu. Names: add or fix entries in `engine\glossary.json` in the same
-folder, in the format of `engine\r1999engine\data\glossary.json`.
-Target languages: add entries to `engine\languages.json` in the same folder, in the format of
-`engine\r1999engine\data\languages.json`; a language with its own `model_repo` downloads that model when it is
-first selected.
+## Languages
+
+The game text is read in English and translated into:
+
+| Language | Status |
+| --- | --- |
+| Thai | Tested the most |
+| Indonesian | Same model, little testing |
+| Vietnamese | Same model, little testing |
+
+The program itself is available in English and Thai.
+
+## Customizing
+
+Everything below lives in `%APPDATA%\R1999Translator`.
+
+- **More target languages:** add entries to `engine\languages.json`. The translation model covers about 200 languages. Format: [languages.json](engine/r1999engine/data/languages.json).
+- **Names and game terms:** add or fix entries in `engine\glossary.json`. Format: [glossary.json](engine/r1999engine/data/glossary.json).
+- **Program languages:** add `locales\<code>.json`. Format: [en.json](ui/r1999ui/locales/en.json).
+
+Another interface can use the engine through its local HTTP protocol, see [docs/PROTOCOL.md](docs/PROTOCOL.md).
+
+## License
+
+Source code: Mozilla Public License 2.0, see [LICENSE](LICENSE). The translation model is NLLB-200 under CC-BY-NC-4.0, which does not allow commercial use. Releases bundle the Kanit font under the SIL Open Font License 1.1.
