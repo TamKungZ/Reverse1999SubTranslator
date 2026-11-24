@@ -12,5 +12,5 @@
 - Font choice from the fonts installed on the machine. Each language can name its preferred fonts in `languages.json`, and release builds bundle Kanit (SIL Open Font License 1.1) as the default for Thai.- Target languages Thai, Indonesian and Vietnamese. More languages can be added in `languages.json`, each optionally with its own model that is downloaded when the language is first selected.
 - Interface languages English and Thai. More can be added as locale files.
 - Local HTTP protocol so another UI can use the engine.
-- Reading of subtitles that wrap to two lines, that move or change between frames, and of scenes without a speaker name.
+- Reading of subtitles that wrap to two lines, that move or change between frames, that are centered, and of scenes without a speaker name.
 - Per-user Windows installer and uninstaller.

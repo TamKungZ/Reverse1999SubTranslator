@@ -70,4 +70,5 @@ The response is the current view; redraw when `seq` or `kind` changes.
 
 `mode` (`sentence`|`word`), `timing` (`wait`|`live`), `target_lang` (a key of `languages`), `name_style` (`native`|`original`|`both`),
 `word_level` (`off`|`basic`|`medium`), `stable_ms`, `live_interval_ms`, `hide_ms`, `region`, `name_band`,
-`model_repo`, `threads`, `device`.
+`model_repo`, `threads` (0 picks a number from the machine), `beam_size` (1 to 5, lower is faster), `device`.
+`threads` and `beam_size` apply the next time the model is loaded.
