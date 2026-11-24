@@ -8,7 +8,12 @@ from .style import StyleTracker
 from .tracker import TextTracker, grew
 from .view import Request, build_view, none_view
 
-FRAME_CHANGE = 0.8
+SAMPLE = 8
+FRAME_CHANGE = 0.8      # brightness change of the whole picture that makes the engine look again when no text is on screen
+TEXT_CHANGE = 1.5       # the same inside the box of the text that is on screen
+IDLE_INTERVAL = 0.2     # without text on screen the picture is read at most this often
+REFRESH_INTERVAL = 0.8  # with text on screen it is read at least this often
+BOX_PAD = 2             # in samples
 HIDE_SIMILARITY = 0.9
 
 
@@ -27,7 +32,10 @@ class Session:
         self._seq = 0
         self._request = None
         self._view = none_view(0)
-        self._prev_small = None
+        self._small = None
+        self._read_small = None
+        self._box = None
+        self._last_read = 0.0
         self.style = StyleTracker()
         self.text = TextTracker(self.style)
         self._reset_state()
@@ -60,7 +68,8 @@ class Session:
     def reset(self):
         with self.lock:
             self._reset_state()
-            self._prev_small = None
+            self._read_small = None
+            self._box = None
             self._hide()
 
     def wants_read(self):
@@ -73,18 +82,43 @@ class Session:
             return self.view()
         try:
             now = self.clock()
-            if self._frame_changed(frame) or self.wants_read():
-                self.reader.name_band = self.cfg["name_band"]
-                self.observe(self.reader.read(frame), now)
+            self._small = frame.img[::SAMPLE, ::SAMPLE].mean(axis=2).astype(np.float32)
+            if self.wants_read() or self._should_read(now):
+                self._read(frame, now)
             self.evaluate(now)
         finally:
             self._ocr_lock.release()
         return self.view()
 
-    def _frame_changed(self, frame):
-        small = frame.img[::8, ::8].mean(axis=2).astype(np.float32)
-        prev, self._prev_small = self._prev_small, small
-        return prev is None or prev.shape != small.shape or float(np.abs(small - prev).mean()) > FRAME_CHANGE
+    def _read(self, frame, now):
+        self.reader.name_band = self.cfg["name_band"]
+        read = self.reader.read(frame)
+        self._read_small, self._last_read = self._small, now
+        self._box = self._sample_box(read.box, self._small.shape) if read.text else None
+        self.observe(read, now)
+
+    @staticmethod
+    def _sample_box(box, shape):
+        if box is None:
+            return None
+        x0, y0, x1, y1 = box
+        return (
+            max(0, x0 // SAMPLE - BOX_PAD), max(0, y0 // SAMPLE - BOX_PAD),
+            min(shape[1], x1 // SAMPLE + BOX_PAD + 1), min(shape[0], y1 // SAMPLE + BOX_PAD + 1),
+        )
+
+    def _should_read(self, now):
+        """Looks at the picture again only when something that matters changed: the text on screen, or any new text."""
+        small, ref = self._small, self._read_small
+        if ref is None or ref.shape != small.shape:
+            return True
+        elapsed = now - self._last_read
+        if self._box is None:
+            return elapsed >= IDLE_INTERVAL and float(np.abs(small - ref).mean()) > FRAME_CHANGE
+        if elapsed >= REFRESH_INTERVAL:
+            return True
+        x0, y0, x1, y1 = self._box
+        return float(np.abs(small[y0:y1, x0:x1] - ref[y0:y1, x0:x1]).mean()) > TEXT_CHANGE
 
     def observe(self, read, now):
         with self.lock:
