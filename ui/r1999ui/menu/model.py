@@ -1,24 +1,4 @@
-ITEMS = [
-    ("ui", "enabled", "toggle"),
-    ("ui", "locale", "choice"),
-    ("eng", "mode", "choice", ("sentence", "word")),
-    ("eng", "timing", "choice", ("wait", "live")),
-    ("eng", "target_lang", "choice"),
-    ("ui", "font_family", "choice"),
-    ("ui", "size_adjust", "number", 0.6, 1.8, 0.05, "pct"),
-    ("ui", "match_original", "toggle"),
-    ("ui", "highlight_names", "toggle"),
-    ("ui", "text_shadow", "toggle"),
-    ("ui", "line_space", "choice", ("grow", "reserve")),
-    ("ui", "max_lines", "number", 2, 5, 1, "lines"),
-    ("ui", "offset_y", "number", -200, 200, 5, "px"),
-    ("eng", "name_style", "choice", ("native", "original", "both")),
-    ("eng", "word_level", "choice", ("off", "basic", "medium")),
-    ("eng", "stable_ms", "number", 150, 2000, 50, "ms"),
-    ("ui", "show_speaker", "toggle"),
-    ("ui", "animations", "toggle"),
-    ("act", "quit", "action"),
-]
+from .items import ITEMS
 
 
 class MenuModel:
