@@ -266,6 +266,15 @@ def test_the_engine_starts_and_says_what_to_install_when_opencv_cannot_be_loaded
     assert host.state == "error" and host.info()["error"].startswith("Install the Media Feature Pack")
 
 
+def test_timekeeper_is_a_game_term_not_a_word_to_translate():
+    g = Glossary()
+    for text in ("Welcome back, Timekeeper.", "Timekeepers must hurry.", "Timekeeper's hand shook."):
+        spans = g.spans(text)
+        assert len(spans) == 1 and spans[0].kind == "term" and spans[0].canon.startswith("Timekeeper")
+    assert g.display("Timekeeper", "term", "th") == g.display("Timekeepers", "term", "th") == "ไทม์คีปเปอร์"
+    assert g.spans("a timekeeper at the race") == []             # the ordinary word is still left to the translator
+
+
 def test_split():
     assert split_sentences("No, no. Don't go. Oh, come on! That was the best part!") == [
         "No, no.", "Don't go.", "Oh, come on!", "That was the best part!"]
