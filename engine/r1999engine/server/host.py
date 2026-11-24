@@ -31,11 +31,13 @@ class Host:
         self.glossary = Glossary(glossary_path or data_dir() / "glossary.json")
         self.session = Session(self.cfg, self.glossary)
         self.fake = fake
+        self.preload = False
         self.downloaders = {"nllb": Downloader(), "argos": ArgosDownloader()}
         self._downloading = "nllb"
         self.state = "starting"
         self.error = ""
         self._engines = {}
+        self._loading = set()
 
     @property
     def downloader(self):
@@ -50,6 +52,15 @@ class Host:
         if self.cfg["translator"] == "argos" and argos:
             return ("argos", argos)
         return ("nllb", model_repo(lang, self.cfg["model_repo"]))
+
+    def other(self):
+        """The model of the translator that is not chosen, when the target language has one."""
+        lang = self.cfg["target_lang"]
+        kind, _ = self.need()
+        if kind == "argos":
+            return ("nllb", model_repo(lang, self.cfg["model_repo"]))
+        argos = LANGUAGES[lang]["argos"]
+        return ("argos", argos) if argos else None
 
     def repo(self):
         kind, key = self.need()
@@ -100,13 +111,31 @@ class Host:
             self.state = "model_missing"
 
     def _load_model(self, need):
-        self.state = "loading"
+        current = need == self.need()
+        if current:
+            self.state = "loading"
         try:
             self._engines[need] = self._build(need)
         except Exception as exc:
-            self._fail(exc)
+            if current:
+                self._fail(exc)
             return
-        self._select_engine()
+        finally:
+            self._loading.discard(need)
+        if need == self.need():
+            self._select_engine()
+
+    def _preload(self):
+        """Gets the other translator ready too, downloading it in the background if needed, so switching is instant."""
+        other = self.other()
+        if not self.preload or self.fake or not other or other in self._engines or other in self._loading:
+            return
+        load = lambda: threading.Thread(target=self._load_model, args=(other,), daemon=True).start()
+        if self._on_disk(other):
+            self._loading.add(other)
+            load()
+        else:
+            self.downloaders[other[0]].start(other[1], on_done=load)
 
     def _detach(self):
         old, self.session.translator = self.session.translator, None
@@ -119,6 +148,7 @@ class Host:
             old.flush()
         self.session.translator = TextTranslator(engine, self.glossary, persist=not self.fake)
         self.state, self.error = "ready", ""
+        self._preload()
 
     def download_model(self):
         need = self.need()
@@ -150,8 +180,22 @@ class Host:
             "fonts": {k: v["fonts"] for k, v in LANGUAGES.items()},
             "language_errors": ERRORS,
             "translator": self.need()[0],
+            "background": self.background(),
             "model_repo": self.repo(),
             "config": self.cfg.snapshot(),
+        }
+
+    def background(self):
+        other = self.other()
+        if not other:
+            return {"translator": "", "state": "idle", "loaded": False, "done": 0, "total": 0}
+        progress = self.downloaders[other[0]].progress()
+        return {
+            "translator": other[0],
+            "state": progress["state"],
+            "loaded": other in self._engines,
+            "done": progress["done"],
+            "total": progress["total"],
         }
 
     def frame(self, body, headers):

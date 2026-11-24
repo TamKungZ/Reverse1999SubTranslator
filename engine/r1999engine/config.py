@@ -7,7 +7,7 @@ from .storage import clone, data_dir, read_json, write_json
 DEFAULTS = {
     "mode": "sentence",
     "timing": "wait",
-    "translator": "nllb",
+    "translator": "argos",
     "target_lang": "th",
     "name_style": "native",
     "word_level": "basic",
@@ -25,7 +25,7 @@ DEFAULTS = {
 CHOICES = {
     "mode": ("sentence", "word"),
     "timing": ("wait", "live"),
-    "translator": ("nllb", "argos"),
+    "translator": ("argos", "nllb"),
     "target_lang": tuple(LANGUAGES),
     "name_style": ("native", "original", "both"),
     "word_level": ("off", "basic", "medium"),

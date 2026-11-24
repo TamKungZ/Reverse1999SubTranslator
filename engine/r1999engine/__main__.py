@@ -16,7 +16,9 @@ def main():
         return
     from .server import Host, serve
 
-    serve(Host(fake=args.fake), args.port)
+    host = Host(fake=args.fake)
+    host.preload = not args.fake
+    serve(host, args.port)
 
 
 if __name__ == "__main__":
