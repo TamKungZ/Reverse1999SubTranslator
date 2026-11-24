@@ -1,3 +1,5 @@
+param([switch]$SkipInstaller)
+
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
@@ -26,3 +28,18 @@ $target = "dist\R1999Translator\engine"
 if (Test-Path $target) { Remove-Item $target -Recurse -Force }
 Copy-Item dist\r1999-engine $target -Recurse
 Write-Host "Done: dist\R1999Translator\R1999Translator.exe"
+
+if ($SkipInstaller) { return }
+$makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+if (-not $makensis) {
+    $makensis = @("${env:ProgramFiles(x86)}\NSIS\makensis.exe", "$env:ProgramFiles\NSIS\makensis.exe") |
+        Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+if (-not $makensis) {
+    Write-Warning "NSIS was not found, the installer was skipped. Install NSIS 3 or pass -SkipInstaller."
+    return
+}
+$version = (Select-String -Path engine\r1999engine\__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+& $makensis /V2 "/DVERSION=$version" installer\R1999Translator.nsi
+if ($LASTEXITCODE -ne 0) { throw "makensis failed" }
+Write-Host "Done: dist\R1999Translator-Setup-$version.exe"
