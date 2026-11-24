@@ -1,4 +1,8 @@
-# R1999 Translator
+<p align="center">
+  <img src="docs/images/icon.png" alt="R1999 Translator" width="128">
+</p>
+
+<h1 align="center">R1999 Translator</h1>
 
 Offline subtitle translator for the Reverse: 1999 PC client. It reads the game's English subtitles from the screen and draws a translation over them. After the translation model has been downloaded, nothing leaves the computer.
 
