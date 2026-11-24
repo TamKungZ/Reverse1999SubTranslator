@@ -132,6 +132,21 @@ def test_language_fonts_and_fallback():
     assert fonts.preferred == [] and fonts.fallback() == []
 
 
+def test_centered_subtitles_are_drawn_around_their_center():
+    ui = UiSettings().data
+    view = {"kind": "sentence", "style": {"text_ink_h": 33 / 1080, "name_cap": 31 / 1080, "text_left": 504 / 1920, "name_left": 426 / 1920,
+            "name_to_text": 76 / 1080, "pitch": None, "text_color": "#e1dedc", "name_color": "#b4aba4", "text_align": "center", "text_center": 0.5}}
+    style = render.resolve_style(view, ui, 1920, 1080, 1.0)
+    assert style["align"] == "center" and abs(style["center"] - 960) < 1e-6
+    view["style"]["text_align"] = "left"
+    assert render.resolve_style(view, ui, 1920, 1080, 1.0)["align"] == "left"
+    from r1999ui.render.text import layout
+    font = render.make_font(40)
+    _, lines, _ = layout("short line", [], font, 1000.0, 0.0, "center")
+    _, plain, _ = layout("short line", [], font, 1000.0, 0.0)
+    assert plain[0].position().x() == 0 and abs(lines[0].position().x() - (1000.0 - lines[0].naturalTextWidth()) / 2) < 1e-6
+
+
 def test_style_matching_sizes():
     ui = UiSettings()
     view = {"kind": "sentence", "style": {"text_ink_h": 33 / 1080, "name_cap": 31 / 1080, "text_left": 412 / 1920,

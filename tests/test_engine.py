@@ -222,6 +222,35 @@ def test_very_wide_lines_are_read_in_two_pieces_cut_between_words():
     assert split_spans(np.zeros((40, 100), bool)) == []
 
 
+def test_centered_menu_lines_and_left_aligned_dialog_lines_are_told_apart():
+    import cv2
+    from r1999engine.ocr import DialogReader, Frame
+    from r1999engine.ocr.reader import is_centered
+    from r1999engine.session.style import StyleTracker
+    w = 1920
+    assert is_centered(323, 1596, w) and is_centered(783, 1136, w)           # main menu lines, around the middle of the screen
+    assert not is_centered(412, 1500, w) and not is_centered(413, 700, w)    # dialog lines start at the same place
+    assert not is_centered(412, 1508, w)                                     # even when such a line happens to be centered
+    reader = DialogReader(Glossary())
+    region = (0.08, 0.78, 0.90, 1.0)
+    for x, text, expected in ((412, "Is the navigation system functioning properly?", "left"), (700, "Plastic wrap can catch the ghost.", "center")):
+        frame = np.full((1080, w, 3), (26, 28, 30), np.uint8)
+        size = cv2.getTextSize(text, cv2.FONT_HERSHEY_DUPLEX, 1.4, 2)[0][0]
+        start = x if expected == "left" else (w - size) // 2
+        cv2.putText(frame, text, (start, 975), cv2.FONT_HERSHEY_DUPLEX, 1.4, (220, 222, 225), 2, cv2.LINE_AA)
+        crop = np.ascontiguousarray(frame[int(region[1] * 1080):, int(region[0] * w):int(region[2] * w)])
+        style = reader.read(Frame(crop, w, 1080, region)).style
+        assert style["text_align"] == expected, (expected, style)
+        if expected == "center":
+            assert abs(style["text_center"] - 0.5) < 0.02
+    tracker = StyleTracker()
+    for _ in range(5):
+        tracker.merge({"text_left": 0.2146})
+    tracker.new_text()                                         # a new subtitle is measured on its own, not against the old one
+    tracker.merge({"text_left": 0.40})
+    assert tracker.values["text_left"] == 0.40
+
+
 def test_split():
     assert split_sentences("No, no. Don't go. Oh, come on! That was the best part!") == [
         "No, no.", "Don't go.", "Oh, come on!", "That was the best part!"]
