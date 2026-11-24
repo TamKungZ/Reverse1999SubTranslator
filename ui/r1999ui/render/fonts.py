@@ -3,6 +3,7 @@ from pathlib import Path
 from PySide6.QtGui import QFont, QFontDatabase, QFontMetricsF
 
 FONTS = Path(__file__).resolve().parent.parent / "fonts"
+UI_FONT = "Kanit"
 FAMILIES = ["Leelawadee UI", "Yu Gothic UI", "Microsoft YaHei UI", "Malgun Gothic", "Segoe UI"]
 
 SYSTEMS = QFontDatabase.WritingSystem
@@ -65,9 +66,9 @@ def fallback():
     return _fallback
 
 
-def make_font(px, weight=QFont.Weight.Normal, italic=False, family=""):
+def make_font(px, weight=QFont.Weight.Normal, italic=False, family="", ui=False):
     font = QFont()
-    lead = ([family] if family else []) + preferred
+    lead = ([UI_FONT] if ui else []) + ([family] if family else []) + preferred
     font.setFamilies(list(dict.fromkeys(lead + FAMILIES + fallback())))
     font.setPixelSize(max(6, int(round(px))))
     font.setWeight(weight)

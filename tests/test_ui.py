@@ -124,6 +124,9 @@ def test_language_fonts_and_fallback():
         families = fonts.make_font(20).families()
         assert families[:3] == ["Kanit", "Tahoma", "Missing"] and families[-1] == "Arabic Sans"
         assert fonts.make_font(20, family="Arial").families()[:2] == ["Arial", "Kanit"]
+        fonts.set_languages([("ar", "Arab", ["Missing"])])
+        assert fonts.make_font(20, ui=True).families()[0] == "Kanit"
+        assert fonts.make_font(20).families()[0] == "Missing"
     finally:
         fonts.families_for = original
         fonts.set_languages([])
