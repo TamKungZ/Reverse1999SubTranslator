@@ -1,10 +1,17 @@
 import ctypes
 
-from .api import IS_WINDOWS, kernel32
+from .api import IS_WINDOWS, kernel32, user32
 
 ERROR_ALREADY_EXISTS = 183
+MB_OK, MB_ICONINFORMATION, MB_SETFOREGROUND = 0x0, 0x40, 0x10000
 
 _instance_mutex = None
+
+
+def show_message(text, title):
+    """A plain message box, for use before the interface exists."""
+    if IS_WINDOWS:
+        user32.MessageBoxW(None, text, title, MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND)
 
 
 def acquire_single_instance(name="Local\\R1999Translator.UI"):

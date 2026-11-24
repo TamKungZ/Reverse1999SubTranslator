@@ -2,9 +2,11 @@ import subprocess
 import threading
 import time
 
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtWidgets import QCheckBox, QMessageBox, QSystemTrayIcon
 
 from .. import render, winutil
+from ..capture import ScreenGrabber
 from ..client import EngineClient
 from ..hotkeys import HotkeyManager
 from ..i18n import Locale
@@ -12,7 +14,10 @@ from ..menu import MenuModel
 from ..overlay import OverlayWindow
 from .download import run_download_dialog
 from .frames import FrameLoop
+from .icon import app_icon
 from .launcher import launch_engine
+from .notify import beep
+from .screenshot import take
 from .tray import Tray
 
 BOOT_ATTEMPTS = 240
@@ -27,6 +32,7 @@ class Bridge(QObject):
     action = Signal(str)
     toast = Signal(str)
     ready = Signal(object)
+    notice = Signal(str, bool)
 
 
 class Controller:
@@ -43,6 +49,9 @@ class Controller:
         self.is_ready = False
         self.frame_loop = None
         self.previous = None
+        self.notice = None
+        self.grabber = None
+        self.watching = False
         self.menu = None
         self.tray = None
         self._stop = threading.Event()
@@ -60,6 +69,7 @@ class Controller:
         self.bridge.action.connect(self.on_action)
         self.bridge.toast.connect(self.overlay.toast)
         self.bridge.ready.connect(self.on_ready)
+        self.bridge.notice.connect(self.notify)
         self.timer = QTimer()
         self.timer.setInterval(GAME_POLL_MS)
         self.timer.timeout.connect(self.poll_game)
@@ -71,6 +81,30 @@ class Controller:
         self.hotkeys.start()
         if self.hotkeys.error:
             self.overlay.toast(self.loc.t("toast.hotkey_error", error=self.hotkeys.error), 4000)
+            self.notify(self.loc.t("toast.hotkey_error", error=self.hotkeys.error), warning=True)
+        if self.ui["startup_notice"]:
+            self.show_startup_notice()
+
+    def show_startup_notice(self):
+        keys = self.ui["hotkeys"]
+        text = self.loc.t("startup.text", menu=keys["menu"], screenshot=keys["screenshot"])
+        box = QMessageBox(QMessageBox.Icon.Information, self.loc.t("app.title"), text)
+        box.setWindowIcon(app_icon())
+        box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        box.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
+        never = QCheckBox(self.loc.t("startup.never"))
+        box.setCheckBox(never)
+        box.finished.connect(lambda _: self.set_ui("startup_notice", False) if never.isChecked() else None)
+        self.notice = box
+        box.show()
+
+    def notify(self, text, warning=False):
+        """A message in the corner of the screen, with a sound unless the sounds are off."""
+        if self.tray:
+            icon = QSystemTrayIcon.MessageIcon.Warning if warning else QSystemTrayIcon.MessageIcon.Information
+            self.tray.icon.showMessage(self.loc.t("app.title"), text, icon, 5000)
+        if self.ui["sounds"]:
+            beep(warning)
 
     def boot(self):
         try:
@@ -96,6 +130,7 @@ class Controller:
     def on_ready(self, info):
         if not info:
             self.overlay.toast(self.loc.t("toast.engine_failed"), 5000)
+            self.notify(self.loc.t("toast.engine_failed"), warning=True)
             return
         self.engine_cfg = info["config"]
         self.scripts = info.get("scripts", {})
@@ -107,12 +142,16 @@ class Controller:
             self.ask_model()
         elif info["state"] == "error":
             self.overlay.toast(self.loc.t("toast.engine_error", error=info["error"][:80]), 6000)
+            self.notify(self.loc.t("toast.engine_error", error=info["error"][:200]), warning=True)
         else:
             self.mark_ready()
         if self.engine_cfg.get("translator") != info.get("translator", self.engine_cfg.get("translator")):
-            self.overlay.toast(self.loc.t("toast.translator_unavailable", lang=self.languages.get(self.engine_cfg["target_lang"], "")), 5000)
+            text = self.loc.t("toast.translator_unavailable", lang=self.languages.get(self.engine_cfg["target_lang"], ""))
+            self.overlay.toast(text, 5000)
+            self.notify(text, warning=True)
 
     def ask_model(self):
+        beep()
         if run_download_dialog(self.client, self.loc):
             self.mark_ready()
         elif not self.is_ready:
@@ -123,9 +162,37 @@ class Controller:
     def mark_ready(self):
         self.is_ready = True
         self.overlay.toast(self.loc.t("toast.ready", key=self.ui["hotkeys"]["menu"]), 3000)
+        self.notify(self.loc.t("notify.ready", key=self.ui["hotkeys"]["menu"]))
+        self.watch_background()
         if self.frame_loop is None:
             self.frame_loop = FrameLoop(self.ui, self.client, self.tracker, self.region, self._stop, self.bridge.view.emit)
             threading.Thread(target=self.frame_loop.run, daemon=True).start()
+
+    def watch_background(self):
+        """Says when the other translator has been downloaded and loaded, which goes on after the program is usable."""
+        if not self.watching:
+            self.watching = True
+            threading.Thread(target=self._watch_background, daemon=True).start()
+
+    def _watch_background(self):
+        announced = False
+        while not self._stop.wait(2.0):
+            try:
+                background = self.client.info()["background"]
+            except (OSError, KeyError):
+                continue
+            name = self.loc.t("opt.translator." + background["translator"]) if background["translator"] else ""
+            if background["state"] == "downloading" and not announced:
+                announced = True
+                self.bridge.notice.emit(self.loc.t("notify.background_start", name=name, mb=max(1, background["total"] >> 20)), False)
+            elif background["state"] in ("error", "cancelled"):
+                self.bridge.notice.emit(self.loc.t("notify.background_failed", name=name), True)
+                break
+            elif background["loaded"]:
+                if announced:
+                    self.bridge.notice.emit(self.loc.t("notify.background_done", name=name), False)
+                break
+        self.watching = False
 
     def poll_game(self):
         if not self.tracker:
@@ -145,6 +212,8 @@ class Controller:
             self.overlay.toast(self.loc.t("toast.mode", mode=self.loc.t("opt.mode." + new)))
         elif action == "menu":
             self.toggle_menu()
+        elif action == "screenshot":
+            self.screenshot()
         elif action.startswith("nav:") and self.menu:
             key = action[4:]
             if key == "back":
@@ -152,6 +221,18 @@ class Controller:
             else:
                 self.menu.handle(key)
                 self.overlay.set_menu(self.menu.rows())
+
+    def screenshot(self):
+        state = self.tracker.state if self.tracker else None
+        if state is None or state.w <= 0:
+            return
+        self.grabber = self.grabber or ScreenGrabber()
+        path = take(self.grabber, state, self.overlay.state)
+        if path:
+            self.overlay.toast(self.loc.t("toast.screenshot"), 2500)
+            self.notify(self.loc.t("notify.screenshot", path=path))
+        else:
+            self.notify(self.loc.t("notify.screenshot_failed"), warning=True)
 
     def toggle_menu(self):
         if self.menu:
@@ -177,6 +258,7 @@ class Controller:
         else:
             if key in ENGINE_CHOICES:
                 self.previous = (key, self.engine_cfg.get(key))
+                self.notify(self.loc.t("notify.loading"))
             self.set_engine(key, value)
         if key in ("locale", "target_lang"):
             self.apply_font_default()

@@ -18,5 +18,6 @@ ITEMS = [
     ("eng", "stable_ms", "number", 150, 2000, 50, "ms"),
     ("ui", "show_speaker", "toggle"),
     ("ui", "animations", "toggle"),
+    ("ui", "sounds", "toggle"),
     ("act", "quit", "action"),
 ]

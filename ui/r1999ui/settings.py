@@ -20,8 +20,10 @@ DEFAULTS = {
     "show_speaker": True,
     "animations": True,
     "auto_exit": False,
+    "startup_notice": True,
+    "sounds": True,
     "panel_x": [0.215, 0.895],
-    "hotkeys": {"toggle": "F7", "mode": "F8", "menu": "F9"},
+    "hotkeys": {"toggle": "F7", "mode": "F8", "menu": "F9", "screenshot": "F10"},
     "menu_keys": {"up": "UP", "down": "DOWN", "left": "LEFT", "right": "RIGHT", "enter": "ENTER", "back": "ESC", "pageup": "PAGEUP", "pagedown": "PAGEDOWN"},
 }
 

@@ -2,11 +2,14 @@ import os
 import sys
 
 from .. import winutil
+from ..i18n import Locale
 from ..settings import UiSettings
 
 
 def main():
     if not winutil.acquire_single_instance():
+        loc = Locale(UiSettings()["locale"])
+        winutil.show_message(loc.t("startup.already"), loc.t("app.title"))
         return
     os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "0")
     os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "0")
