@@ -8,6 +8,7 @@ if (-not (Test-Path .venv)) { python -m venv .venv }
 & .\.venv\Scripts\python.exe -m pip install -r requirements.txt pyinstaller
 
 & .\.venv\Scripts\pyinstaller.exe --noconfirm --clean --noconsole --name r1999-engine `
+    --icon ui\r1999ui\assets\icon.ico `
     --paths engine `
     --collect-all rapidocr_onnxruntime --collect-all ctranslate2 --collect-all sentencepiece `
     --collect-data pythainlp `
@@ -15,6 +16,7 @@ if (-not (Test-Path .venv)) { python -m venv .venv }
     engine\run_engine.py
 
 & .\.venv\Scripts\pyinstaller.exe --noconfirm --clean --noconsole --name R1999Translator `
+    --icon ui\r1999ui\assets\icon.ico `
     --paths ui `
     --add-data "ui\r1999ui\assets;r1999ui\assets" `
     --add-data "ui\r1999ui\locales;r1999ui\locales" `

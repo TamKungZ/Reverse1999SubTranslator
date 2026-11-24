@@ -34,6 +34,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
+    icon=['ui/r1999ui/assets/icon.ico'],
     name='r1999-engine',
     debug=False,
     bootloader_ignore_signals=False,

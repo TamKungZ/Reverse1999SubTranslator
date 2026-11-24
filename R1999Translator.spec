@@ -21,6 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
+    icon=['ui/r1999ui/assets/icon.ico'],
     name='R1999Translator',
     debug=False,
     bootloader_ignore_signals=False,

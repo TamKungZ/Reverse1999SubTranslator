@@ -16,9 +16,11 @@ def main():
 
     from .. import render
     from .controller import Controller
+    from .icon import app_icon
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    app.setWindowIcon(app_icon())
     render.load_fonts()
     controller = Controller(app, UiSettings())
     controller.start()
