@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.3] - 2026-11-25
+
+### Changed
+
+- The menu and the messages use the Kanit font, whatever the language. Other fonts are only used for characters Kanit does not have. The translation keeps its own font choice.
+
 ## [1.1.2] - 2026-11-24
 
 ### Fixed
