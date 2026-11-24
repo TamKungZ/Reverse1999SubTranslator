@@ -1,0 +1,6 @@
+{
+  "_about": "Target languages. Copy this file to %APPDATA%\\R1999Translator\\engine\\languages.json and add or change entries there. Required per entry: name (shown in the menu) and nllb (NLLB-200 code, for example deu_Latn). Optional: join (text placed between translated sentences, default a space, empty for Japanese and Chinese), native_names (transliterate names into the language, default true for non Latin scripts), model_repo (a CTranslate2 NLLB model on Hugging Face to use for this language instead of the default one, downloaded the first time the language is selected).",
+  "th": {"name": "ไทย", "nllb": "tha_Thai"},
+  "id": {"name": "Indonesia", "nllb": "ind_Latn"},
+  "vi": {"name": "Tiếng Việt", "nllb": "vie_Latn"}
+}

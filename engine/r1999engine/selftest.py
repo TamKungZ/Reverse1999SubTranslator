@@ -5,6 +5,7 @@ import cv2
 
 from .config import EngineConfig
 from .glossary import Glossary
+from .languages import model_repo
 from .model import is_ready, model_dir
 from .ocr import DialogReader, Frame
 from .translate import FakeEngine, NLLBEngine, TextTranslator
@@ -13,7 +14,7 @@ from .translate import FakeEngine, NLLBEngine, TextTranslator
 def _engine(cfg, fake):
     if fake:
         return FakeEngine()
-    path = model_dir(cfg["model_repo"])
+    path = model_dir(model_repo(cfg["target_lang"], cfg["model_repo"]))
     if not is_ready(path):
         sys.exit("model not downloaded: %s" % path)
     return NLLBEngine(path, cfg["threads"], cfg["device"])
