@@ -7,7 +7,7 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `scripts`, `language_errors`, `model_repo`, `config` |
+| GET | `/info` | `protocol`, `version`, `state`, `error`, `download`, `languages`, `scripts`, `fonts`, `language_errors`, `model_repo`, `config` |
 | POST | `/frame` | Send one frame, receive the current view |
 | GET | `/view` | Current view without sending a frame |
 | GET / POST | `/config` | Read or update engine settings (JSON object) |
@@ -18,6 +18,8 @@ A UI only captures the game, sends frames, and draws the returned view. All JSON
 `state` is one of `starting`, `loading`, `model_missing`, `downloading`, `ready`, `error`.
 `download` is `{state, done, total, file, error}` in bytes.
 `languages` maps a language code to its display name and `scripts` to its script (`Thai`, `Latn`, `Jpan`, ...).
+`fonts` maps a language code to the font families a UI should prefer for it, the first being the default; a UI
+should not offer a language that no installed font can show.
 `language_errors` lists entries of the user's `languages.json` that were skipped. `model_repo` is the model the
 current `target_lang` uses. Setting `target_lang` to a language whose model is not on disk changes `state` to
 `model_missing`; call `/model/download` to fetch it.
