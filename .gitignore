@@ -8,6 +8,7 @@ venv/
 # Build output (build.ps1)
 build/
 dist/
+*.spec
 
 # Local data and previews
 preview/
