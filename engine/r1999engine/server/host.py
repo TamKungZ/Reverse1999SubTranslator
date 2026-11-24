@@ -110,6 +110,7 @@ class Host:
             "download": self.downloader.progress(),
             "languages": {k: v["name"] for k, v in LANGUAGES.items()},
             "scripts": {k: v["script"] for k, v in LANGUAGES.items()},
+            "fonts": {k: v["fonts"] for k, v in LANGUAGES.items()},
             "language_errors": ERRORS,
             "model_repo": self.repo(),
             "config": self.cfg.snapshot(),

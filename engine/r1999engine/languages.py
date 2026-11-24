@@ -26,6 +26,9 @@ def complete(code, entry):
         raise ValueError("nllb must look like tha_Thai")
     if repo is not None and not (isinstance(repo, str) and MODEL_REPO.fullmatch(repo)):
         raise ValueError("model_repo must look like owner/name")
+    fonts = entry.get("fonts", [])
+    if not (isinstance(fonts, list) and all(isinstance(f, str) and f.strip() for f in fonts)):
+        raise ValueError("fonts must be a list of font names")
     script = nllb.split("_")[1]
     return {
         "name": name,
@@ -34,6 +37,7 @@ def complete(code, entry):
         "join": entry.get("join", "" if script in NO_SPACE_SCRIPTS else " "),
         "native_names": bool(entry.get("native_names", script != "Latn")),
         "model_repo": repo,
+        "fonts": fonts,
     }
 
 

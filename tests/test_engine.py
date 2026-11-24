@@ -76,6 +76,13 @@ def test_language_defaults_from_the_nllb_code():
     assert ja["join"] == ""
     assert complete("xx", {"name": "x", "nllb": "deu_Latn", "join": "", "native_names": True, "model_repo": "me/model"})["model_repo"] == "me/model"
     assert set(LANGUAGES) >= {"th", "id", "vi"}
+    assert LANGUAGES["th"]["fonts"][0] == "Kanit" and LANGUAGES["id"]["fonts"] == []
+    for bad in ("Kanit", ["ok", ""], [1]):
+        try:
+            complete("x", {"name": "x", "nllb": "deu_Latn", "fonts": bad})
+        except ValueError:
+            continue
+        raise AssertionError("fonts %r should be rejected" % (bad,))
 
 
 def test_user_language_file_adds_overrides_and_reports_errors():
