@@ -126,7 +126,7 @@ Function DirLeave
   Call ValidateInstDir
 FunctionEnd
 
-Section "$(SectionProgram)" SecProgram
+Section "$(SectionProgram)"
   SectionIn RO
   Call CloseRunning
 
@@ -161,7 +161,7 @@ Section "$(SectionProgram)" SecProgram
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "EstimatedSize" $0
 SectionEnd
 
-Section /o "$(SectionDesktop)" SecDesktop
+Section /o "$(SectionDesktop)"
   CreateShortcut "$DESKTOP\${NAME}.lnk" "$INSTDIR\${EXE}"
 SectionEnd
 

@@ -204,7 +204,7 @@ def test_a_centered_line_that_starts_left_of_the_usual_area_is_read_whole():
     crop = np.ascontiguousarray(frame[int(region[1] * h):, int(region[0] * w):int(region[2] * w)])
     read = reader.read(Frame(crop, w, h, region))
     assert read.text.startswith("Sounds like") and read.text.endswith("trouble.")
-    x0, y0, x1, y1 = read.box
+    x0, y0, _, y1 = read.box
     assert x0 < (0.19 - 0.08) * w and y1 > y0           # the box covers the line, including the part left of the usual area
 
 

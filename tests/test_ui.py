@@ -1,4 +1,3 @@
-import json
 import os
 import subprocess
 import sys
@@ -15,7 +14,6 @@ sys.path.insert(0, str(ROOT / "engine"))
 import cv2
 import numpy as np
 from PySide6.QtCore import QCoreApplication
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication
 
 from r1999ui import render, winutil
