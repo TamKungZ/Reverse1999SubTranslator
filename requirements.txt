@@ -1,0 +1,7 @@
+rapidocr-onnxruntime
+ctranslate2
+sentencepiece
+pythainlp
+numpy
+PySide6-Essentials
+mss
