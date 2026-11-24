@@ -1,8 +1,6 @@
-import json
-import os
 from pathlib import Path
 
-APP_NAME = "R1999Translator"
+from .storage import clone, data_dir, read_json, write_json
 
 DEFAULTS = {
     "enabled": True,
@@ -28,29 +26,17 @@ DEFAULTS = {
 }
 
 
-def data_dir():
-    base = os.environ.get("APPDATA")
-    root = Path(base) if base else Path.home() / ".config"
-    path = root / APP_NAME
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
 class UiSettings:
     def __init__(self, path=None):
         self.path = Path(path) if path else data_dir() / "ui.json"
-        self.data = json.loads(json.dumps(DEFAULTS))
-        try:
-            stored = json.loads(self.path.read_text(encoding="utf-8"))
-            for key, value in stored.items():
-                if key not in DEFAULTS:
-                    continue
-                if isinstance(DEFAULTS[key], dict) and isinstance(value, dict):
-                    self.data[key].update(value)
-                else:
-                    self.data[key] = value
-        except (OSError, ValueError):
-            pass
+        self.data = clone(DEFAULTS)
+        for key, value in (read_json(self.path, {}) or {}).items():
+            if key not in DEFAULTS:
+                continue
+            if isinstance(DEFAULTS[key], dict) and isinstance(value, dict):
+                self.data[key].update(value)
+            else:
+                self.data[key] = value
 
     def __getitem__(self, key):
         return self.data[key]
@@ -60,7 +46,4 @@ class UiSettings:
         self.save()
 
     def save(self):
-        try:
-            self.path.write_text(json.dumps(self.data, indent=2, ensure_ascii=False), encoding="utf-8")
-        except OSError:
-            pass
+        write_json(self.path, self.data, indent=2)
