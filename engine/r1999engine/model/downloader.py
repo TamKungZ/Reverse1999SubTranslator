@@ -1,5 +1,6 @@
 import json
 import threading
+import urllib.error
 import urllib.request
 
 from .. import __version__
@@ -85,7 +86,13 @@ class Downloader:
         """Downloads a file to `part`, resuming what an earlier try left there."""
         start = part.stat().st_size if part.exists() else 0
         req = request(url, {"Range": "bytes=%d-" % start} if start else None)
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        try:
+            resp = urllib.request.urlopen(req, timeout=60)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 416 and start:
+                return
+            raise
+        with resp:
             if start and resp.status != 206:
                 start = 0
             if not self.total and resp.headers.get("Content-Length"):

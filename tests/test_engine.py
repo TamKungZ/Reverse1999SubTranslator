@@ -198,6 +198,27 @@ def test_argos_models_are_found_unpacked_and_cleaned():
         raise AssertionError("argos %r should be rejected" % (bad,))
 
 
+def test_a_download_that_was_already_complete_is_not_an_error():
+    import urllib.error
+    import urllib.request
+    from r1999engine.model import Downloader
+
+    part = Path(tempfile.mkdtemp()) / "pack.part"
+    part.write_bytes(b"done")
+
+    def refuse(req, timeout=0):
+        assert req.get_header("Range") == "bytes=4-"
+        raise urllib.error.HTTPError(req.full_url, 416, "Range Not Satisfiable", {}, None)
+
+    original = urllib.request.urlopen
+    urllib.request.urlopen = refuse
+    try:
+        Downloader()._stream("https://example.invalid/pack", part)
+    finally:
+        urllib.request.urlopen = original
+    assert part.read_bytes() == b"done"
+
+
 class CountingReader:
     def __init__(self):
         self.reads, self.text, self.box = 0, "Hello there friend.", (160, 400, 960, 460)
