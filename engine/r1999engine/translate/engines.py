@@ -1,17 +1,25 @@
+import os
 from pathlib import Path
 
 from ..languages import LANGUAGES
 
+MAX_AUTO_THREADS = 8
+
+
+def default_threads():
+    return max(2, min(MAX_AUTO_THREADS, (os.cpu_count() or 4) * 2 // 3))
+
 
 class NLLBEngine:
-    def __init__(self, model_dir, threads=4, device="cpu"):
+    def __init__(self, model_dir, threads=0, device="cpu", beam_size=2):
+        self.beam_size = beam_size
         import ctranslate2
         import sentencepiece
 
         self.sp = sentencepiece.SentencePieceProcessor()
         self.sp.Load(str(Path(model_dir) / "sentencepiece.bpe.model"))
         self.translator = ctranslate2.Translator(
-            str(model_dir), device=device, inter_threads=1, intra_threads=threads, compute_type="auto"
+            str(model_dir), device=device, inter_threads=1, intra_threads=threads or default_threads(), compute_type="auto"
         )
 
     def translate(self, texts, lang):
@@ -20,7 +28,7 @@ class NLLBEngine:
         results = self.translator.translate_batch(
             batch,
             target_prefix=[[target]] * len(batch),
-            beam_size=3,
+            beam_size=self.beam_size,
             max_decoding_length=200,
             repetition_penalty=1.1,
             max_batch_size=16,

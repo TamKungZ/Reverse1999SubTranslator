@@ -66,7 +66,7 @@ class Host:
     def _load_model(self, repo):
         self.state = "loading"
         try:
-            self._engines[repo] = NLLBEngine(model_dir(repo), self.cfg["threads"], self.cfg["device"])
+            self._engines[repo] = NLLBEngine(model_dir(repo), self.cfg["threads"], self.cfg["device"], self.cfg["beam_size"])
         except Exception as exc:
             self._fail(exc)
             return

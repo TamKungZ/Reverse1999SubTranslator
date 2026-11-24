@@ -17,7 +17,7 @@ def _engine(cfg, fake):
     path = model_dir(model_repo(cfg["target_lang"], cfg["model_repo"]))
     if not is_ready(path):
         sys.exit("model not downloaded: %s" % path)
-    return NLLBEngine(path, cfg["threads"], cfg["device"])
+    return NLLBEngine(path, cfg["threads"], cfg["device"], cfg["beam_size"])
 
 
 def run(image_path, fake):

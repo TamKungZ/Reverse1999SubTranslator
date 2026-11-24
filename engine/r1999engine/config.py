@@ -14,9 +14,10 @@ DEFAULTS = {
     "live_interval_ms": 300,
     "hide_ms": 450,
     "model_repo": "skywood/nllb-200-distilled-600M-ct2-int8",
-    "threads": 4,
+    "threads": 0,
+    "beam_size": 2,
     "device": "cpu",
-    "region": [0.19, 0.78, 0.90, 1.0],
+    "region": [0.08, 0.78, 0.90, 1.0],
     "name_band": [0.80, 0.86],
 }
 
@@ -32,9 +33,11 @@ RANGES = {
     "stable_ms": (150, 2000),
     "live_interval_ms": (120, 2000),
     "hide_ms": (150, 3000),
-    "threads": (1, 32),
+    "threads": (0, 32),
+    "beam_size": (1, 5),
 }
 
+LEGACY_DEFAULTS = {"region": [0.19, 0.78, 0.9, 1.0], "threads": 4}   # saved by earlier versions, now replaced by better defaults
 BOXES = {"region": 4, "name_band": 2}
 STRINGS = ("model_repo", "device")
 REJECT = object()
@@ -62,7 +65,11 @@ class EngineConfig:
         self.path = Path(path) if path else data_dir() / "config.json"
         self.data = clone(DEFAULTS)
         self._lock = threading.Lock()
-        self.update(read_json(self.path, {}), save=False)
+        stored = read_json(self.path, {})
+        for key, old in LEGACY_DEFAULTS.items():
+            if stored.get(key) == old:
+                del stored[key]
+        self.update(stored, save=False)
 
     def __getitem__(self, key):
         return self.data[key]
