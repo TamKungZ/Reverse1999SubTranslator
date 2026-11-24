@@ -10,8 +10,7 @@ build/
 dist/
 *.spec
 
-# Local data and previews
-preview/
+# Local data
 *.log
 
 # Fonts downloaded by the release workflow
