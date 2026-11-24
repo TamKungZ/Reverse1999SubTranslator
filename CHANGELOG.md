@@ -14,3 +14,4 @@
 - Local HTTP protocol so another UI can use the engine.
 - Reading of subtitles that wrap to two lines, that move or change between frames, that are centered, and of scenes without a speaker name.
 - Per-user Windows installer and uninstaller.
+- A message that says what to install when the engine cannot start on Windows N editions without the Media Feature Pack.
