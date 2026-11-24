@@ -107,14 +107,12 @@ def test_locales_complete():
     from r1999ui.i18n import BUILTIN, Locale
     en = json.loads((BUILTIN / "en.json").read_text(encoding="utf-8"))
     th = json.loads((BUILTIN / "th.json").read_text(encoding="utf-8"))
-    assert {k for k in en if not k.startswith("_")} == {k for k in th if not k.startswith("_")}
+    assert set(en) == set(th)
     loc = Locale("th")
     assert loc.t("val.on") == "เปิด" and loc.t("toast.mode", mode="x") == "โหมด: x"
     assert Locale("zz").code == "en" and Locale("en").t("no.such.key") == "no.such.key"
     assert set(Locale("en").available()) >= {"en", "th"}
     assert Locale("en").t("toast.ready", key="F9") == "Ready. Press F9 for settings"
-    no_thai = Locale("th", usable=lambda script: script != "Thai")
-    assert no_thai.code == "en" and "th" not in no_thai.available() and "th" in Locale("th").available()
 
 
 def test_language_fonts_and_fallback():

@@ -38,10 +38,6 @@ def families_for(lang, script):
     return sorted({f for f in QFontDatabase.families(system) if not f.startswith("@")}, key=str.lower)
 
 
-def supports(lang, script):
-    return bool(families_for(lang, script))
-
-
 def load_fonts():
     global _fallback
     for ttf in sorted(FONTS.glob("*.ttf")):

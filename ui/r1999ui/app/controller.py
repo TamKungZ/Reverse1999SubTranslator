@@ -31,7 +31,7 @@ class Bridge(QObject):
 class Controller:
     def __init__(self, app, ui):
         self.app, self.ui = app, ui
-        self.loc = Locale(ui["locale"], usable=lambda script: render.supports("", script))
+        self.loc = Locale(ui["locale"])
         self.client = EngineClient(ui["engine_port"])
         self.engine_proc = None
         self.engine_cfg = {}
@@ -99,26 +99,15 @@ class Controller:
         self.engine_cfg = info["config"]
         self.scripts = info.get("scripts", {})
         self.language_fonts = info.get("fonts", {})
-        self.languages = {c: n for c, n in info["languages"].items() if render.supports(c, self.scripts.get(c))}
+        self.languages = info["languages"]
         self.region = tuple(self.engine_cfg["region"])
         self.apply_font_default()
-        if self.switch_from_unusable_language(info["languages"]):
-            return
         if info["state"] == "model_missing":
             self.ask_model()
         elif info["state"] == "error":
             self.overlay.toast(self.loc.t("toast.engine_error", error=info["error"][:80]), 6000)
         else:
             self.mark_ready()
-
-    def switch_from_unusable_language(self, names):
-        lang = self.engine_cfg.get("target_lang")
-        if not self.languages or lang in self.languages:
-            return False
-        other = next(iter(self.languages))
-        self.overlay.toast(self.loc.t("toast.language_unavailable", lang=names.get(lang, lang), other=self.languages[other]), 5000)
-        self.set_engine("target_lang", other)
-        return True
 
     def ask_model(self):
         if run_download_dialog(self.client, self.loc):

@@ -1,6 +1,5 @@
 {
   "_name": "ไทย",
-  "_script": "Thai",
   "app.title": "R1999 Translator",
   "val.on": "เปิด",
   "val.off": "ปิด",
@@ -11,7 +10,6 @@
   "toast.hotkey_error": "ฮอตคีย์ใช้ไม่ได้: {error}",
   "toast.engine_failed": "เริ่ม engine แปลภาษาไม่สำเร็จ",
   "toast.engine_error": "engine ผิดพลาด: {error}",
-  "toast.language_unavailable": "ไม่มีฟอนต์ในเครื่องที่แสดง {lang} ได้ จึงเปลี่ยนเป็น {other}",
   "setup.text": "ต้องดาวน์โหลดโมเดลแปลภาษา (ประมาณ 620 MB) ครั้งเดียว\nไฟล์จะถูกเก็บในเครื่องและแปลแบบออฟไลน์",
   "setup.downloading": "กำลังดาวน์โหลด {file}  ({done} / {total} MB)",
   "setup.loading": "กำลังโหลดโมเดล...",
